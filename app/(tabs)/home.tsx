@@ -1,36 +1,42 @@
 import PostCard from "@/components/PostCard";
 import { ThemedText } from "@/components/ThemedText";
+import { useAuth } from "@/context/AuthContext";
+import { useGetPost } from "@/hooks/usePost";
+import { useLogout } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { FlatList, ScrollView, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Page = () => {
-  // Tambahkan data dummy
-  const dummyPosts = [
-    {
-      id: "1",
-      name: "John Doe",
-      time: "2 jam yang lalu",
-      imgUrl: "https://picsum.photos/400/300",
-      caption: "Hari yang indah di pantai!",
-      like: 120,
-      comment: 45,
-      share: 12,
-      imageProfile: "https://picsum.photos/100/100",
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      time: "5 jam yang lalu",
-      imgUrl: "https://picsum.photos/400/301",
-      caption: "Makan siang bersama teman-teman",
-      like: 89,
-      comment: 23,
-      share: 5,
-      imageProfile: "https://picsum.photos/100/101",
-    },
-  ];
+  const { mutate: logout } = useLogout();
+  const { userData } = useAuth();
+  const { posts, isLoading } = useGetPost();
+
+  // Format tanggal dari ISO string
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
+
+    if (diffInHours < 24) {
+      return `${diffInHours} jam yang lalu`;
+    } else {
+      return date.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -41,18 +47,35 @@ const Page = () => {
             <View className="w-10 h-10 bg-gray-300 rounded-full" />
             <View className="ml-3">
               <ThemedText className="text-lg font-semibold">
-                Good morning, Hadiano!
+                Good morning,{" "}
+                {userData?.username?.includes("@")
+                  ? userData?.username?.split("@")[0]
+                  : userData?.username}
               </ThemedText>
-              <ThemedText className="text-gray-500">@hadiano_sutomo</ThemedText>
+              <ThemedText className="text-gray-500">
+                {userData?.email}
+              </ThemedText>
             </View>
           </View>
-          <Ionicons name="notifications-outline" size={24} color="black" />
+          <Ionicons
+            onPress={() => logout()}
+            name="notifications-outline"
+            size={24}
+            color="black"
+          />
         </View>
 
         {/* Info Card */}
-        <View className="p-4 mt-4 shadow bg-white rounded-lg">
+        <View className="flex flex-col gap-1 p-4 mt-4 shadow bg-white rounded-lg">
           <ThemedText className="text-gray-500">Hari ini</ThemedText>
-          <ThemedText className="font-bold">Minggu, 25 Agustus 2024</ThemedText>
+          <ThemedText className="font-bold">
+            {new Date().toLocaleDateString("id-ID", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </ThemedText>
           <ThemedText className="text-gray-500">
             Semoga harimu menyenangkan!
           </ThemedText>
@@ -65,7 +88,7 @@ const Page = () => {
               Kegiatan Hari Ini
             </ThemedText>
             <ThemedText className="text-white text-2xl font-bold text-center">
-              3
+              {posts?.length || 0}
             </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity className="flex-1 bg-green-500 p-4 rounded-lg mx-1">
@@ -78,25 +101,43 @@ const Page = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Post Card */}
-        <FlatList
-          data={dummyPosts}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <PostCard
-              name={item.name}
-              time={item.time}
-              imgUrl={item.imgUrl}
-              caption={item.caption}
-              like={item.like}
-              comment={item.comment}
-              share={item.share}
-              imageProfile={item.imageProfile}
+        {/* Posts Section */}
+        <View className="mt-6">
+          <ThemedText className="text-xl font-bold mb-2">
+            Postingan Terbaru
+          </ThemedText>
+
+          {isLoading ? (
+            <View className="py-8 flex items-center justify-center">
+              <ActivityIndicator size="large" color="#2A9E9E" />
+            </View>
+          ) : posts && posts.length > 0 ? (
+            <FlatList
+              data={posts}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <PostCard
+                  name={userData?.username || "User"}
+                  time={formatDate(item.created_at)}
+                  imgUrl={item.image_url || item.image}
+                  caption={item.caption}
+                  like={item.like || 0}
+                  comment={item.comment || 0}
+                  share={item.share || 0}
+                  imageProfile="https://picsum.photos/100/100"
+                />
+              )}
             />
+          ) : (
+            <View className="py-8 flex items-center justify-center">
+              <ThemedText className="text-gray-400 text-center">
+                Belum ada postingan. Tambahkan postingan pertama Anda!
+              </ThemedText>
+            </View>
           )}
-        />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

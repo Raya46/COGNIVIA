@@ -12,10 +12,12 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.cognivia.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["android.permission.INTERNET"]
     },
     "web": {
       "bundler": "metro",
@@ -24,6 +26,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-image-picker",
       [
         "expo-splash-screen",
         {
