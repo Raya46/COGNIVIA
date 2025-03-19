@@ -2,15 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, Tabs } from "expo-router";
-import { useState } from "react";
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
 
 const { height } = Dimensions.get("window");
 const tabBarHeight = height * 0.08;
@@ -26,47 +18,7 @@ const AddButton = ({ onPress }: { onPress: () => void }) => {
   );
 };
 
-const dummyImages = [
-  { id: "1", url: "https://picsum.photos/200/200?random=1" },
-  { id: "2", url: "https://picsum.photos/200/200?random=2" },
-  { id: "3", url: "https://picsum.photos/200/200?random=3" },
-  { id: "4", url: "https://picsum.photos/200/200?random=4" },
-  { id: "5", url: "https://picsum.photos/200/200?random=5" },
-  { id: "6", url: "https://picsum.photos/200/200?random=6" },
-  { id: "7", url: "https://picsum.photos/200/200?random=6" },
-  { id: "8", url: "https://picsum.photos/200/200?random=6" },
-  { id: "9", url: "https://picsum.photos/200/200?random=6" },
-  { id: "10", url: "https://picsum.photos/200/200?random=6" },
-];
-
-const ImageGrid = ({
-  onImageSelect,
-}: {
-  onImageSelect: (imageUrl: string) => void;
-}) => {
-  return (
-    <FlatList
-      data={dummyImages}
-      numColumns={3}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          className="flex-1 m-1 aspect-square"
-          onPress={() => onImageSelect(item.url)}
-        >
-          <Image
-            source={{ uri: item.url }}
-            className="w-full h-full rounded-md"
-          />
-        </TouchableOpacity>
-      )}
-    />
-  );
-};
-
 export default function Layout() {
-  const [image, setImage] = useState<string | null>(null);
-
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

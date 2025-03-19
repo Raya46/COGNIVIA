@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGetPost } from "@/hooks/usePost";
 import { useLogout } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
   FlatList,
@@ -19,7 +20,6 @@ const Page = () => {
   const { userData } = useAuth();
   const { posts, isLoading } = useGetPost();
 
-  // Format tanggal dari ISO string
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -44,7 +44,10 @@ const Page = () => {
         {/* Header */}
         <View className="flex-row items-center justify-between mt-4">
           <View className="flex-row items-center">
-            <View className="w-10 h-10 bg-gray-300 rounded-full" />
+            <TouchableOpacity
+              onPress={() => router.push("/recall-memory")}
+              className="w-10 h-10 bg-gray-300 rounded-full"
+            />
             <View className="ml-3">
               <ThemedText className="text-lg font-semibold">
                 Good morning,{" "}

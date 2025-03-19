@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Image, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const LoginScreen = () => {
@@ -119,7 +119,7 @@ const LoginScreen = () => {
           className="mt-6 bg-teal-500 p-3 rounded-lg items-center"
         >
           <ThemedText className="text-white text-lg font-semibold">
-            Login
+            {isLoading ? <ActivityIndicator color={"#fff"} /> : "Login"}
           </ThemedText>
         </TouchableOpacity>
 
