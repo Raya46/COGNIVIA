@@ -1,26 +1,70 @@
-import { ThemedText } from '@/components/ThemedText';
-import React from 'react';
-import { ScrollView, View, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-// Image sources - Replace these with your actual image paths/URLs
-const imageSources = [
-  'https://images.pexels.com/photos/768473/pexels-photo-768473.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/1028704/pexels-photo-1028704.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/392018/pexels-photo-392018.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/2079234/pexels-photo-2079234.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/239581/pexels-photo-239581.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/894549/pexels-photo-894549.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/38276/tree-sunset-nature-flowers-38276.jpeg?auto=compress&cs=tinysrgb&w=600',
-];
+import { ThemedText } from "@/components/ThemedText";
+import React from "react";
+import {
+  ScrollView,
+  View,
+  Image,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useGetPost } from "@/hooks/usePost";
+import { router } from "expo-router";
+import { PostCardType } from "@/components/PostCard";
+import { useGetSchedule } from "@/hooks/useSchedule";
+import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
+import { useAuth } from "@/context/AuthContext";
 
 const Page = () => {
+  const { posts, isLoading } = useGetPost();
+  const { userData } = useAuth();
+  const { schedules, isLoading: scheduleLoading } = useGetSchedule();
+  const renderSchedule = ({ item }: { item: ScheduleCardProps }) => {
+    return (
+      <ScheduleCard
+        onPress={() => router.push("/schedule")}
+        id={item.id}
+        time={item.time}
+        title={item.title}
+        type={item.type}
+        description={item.description}
+      />
+    );
+  };
+  const renderImagePost = ({ item }: { item: PostCardType }) => {
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/recall-memory",
+            params: {
+              id: item.id,
+              title: item.title,
+              image_url: item.image_url,
+              caption: item.caption,
+              memory_word: item.memory_word,
+              created_at: item.created_at,
+            },
+          })
+        }
+        className="w-1/3 mx-1"
+      >
+        <Image
+          source={{ uri: item.image_url }}
+          className="w-full h-40"
+          resizeMode="cover"
+        />
+      </TouchableOpacity>
+    );
+  };
+
+  if (scheduleLoading && isLoading) {
+    return <ActivityIndicator size="small" color="#008B8B" />;
+  }
   return (
-    <SafeAreaView className="bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       <ScrollView>
         <View className="flex-row items-center justify-between px-5 pt-2">
           <ThemedText className="text-2xl font-bold">Profile</ThemedText>
@@ -35,11 +79,17 @@ const Page = () => {
               <View className="w-20 h-20 rounded-full bg-sky-300" />
             </View>
             <View className="flex-1">
-              <ThemedText className="text-lg font-bold">Hadiano Sutomo</ThemedText>
-              <ThemedText className="mt-1 text-gray-500">"Bahagia itu sederhana"</ThemedText>
+              <ThemedText className="text-lg font-bold">
+                {userData?.username}
+              </ThemedText>
+              <ThemedText className="mt-1 text-gray-500">
+                {userData?.email}
+              </ThemedText>
               <View className="flex flex-row items-center mt-1">
                 <Ionicons name="location" size={14} color="gray" />
-                <ThemedText className="ml-1 text-gray-500">Bandung, Indonesia</ThemedText>
+                <ThemedText className="ml-1 text-gray-500">
+                  Bandung, Indonesia
+                </ThemedText>
               </View>
             </View>
           </View>
@@ -47,90 +97,34 @@ const Page = () => {
           <View className="flex flex-row items-center justify-between mb-3">
             <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
             <TouchableOpacity>
-              <ThemedText className="text-teal-500">Detail</ThemedText>
+              <ThemedText
+                onPress={() => router.push("/schedule")}
+                className="text-teal-500"
+              >
+                Detail
+              </ThemedText>
             </TouchableOpacity>
           </View>
 
-          <View className="px-4 py-3 mb-3 bg-gray-100 rounded-lg">
-            <View className="flex flex-row items-center justify-between">
-              <View className="flex flex-row items-start">
-                <View className="w-2 h-2 mt-1 mr-2 bg-teal-500 rounded-full" />
-                <View>
-                  <ThemedText className="font-bold">Sarapan & Latihan otak</ThemedText>
-                  <ThemedText className="text-gray-500">Kegiatan</ThemedText>
-                </View>
-              </View>
-              <View className="flex flex-row items-center">
-                <ThemedText className="mr-2">7:30</ThemedText>
-                <Ionicons name="chevron-down" size={20} color="gray" />
-              </View>
-            </View>
-          </View>
+          <FlatList
+            data={schedules}
+            renderItem={renderSchedule}
+            keyExtractor={(item) => item.id as string}
+            scrollEnabled={false}
+            ItemSeparatorComponent={() => <View className="h-1" />}
+          />
 
-          <View className="px-4 py-3 mb-3 bg-gray-100 rounded-lg">
-            <View className="flex flex-row items-center justify-between">
-              <View className="flex flex-row items-start">
-                <View className="w-2 h-2 mt-1 mr-2 bg-pink-500 rounded-full" />
-                <View>
-                  <ThemedText className="font-bold">Minum obat (pagi)</ThemedText>
-                  <ThemedText className="text-gray-500">Rutinitas</ThemedText>
-                </View>
-              </View>
-              <View className="flex flex-row items-center">
-                <ThemedText className="mr-2">9:00</ThemedText>
-                <Ionicons name="chevron-down" size={20} color="gray" />
-              </View>
-            </View>
-          </View>
+          <ThemedText className="mt-5 mb-3 text-lg font-bold">
+            Postingan
+          </ThemedText>
 
-          <View className="px-4 py-3 mb-3 bg-gray-100 rounded-lg">
-            <View className="flex flex-row items-center justify-between">
-              <View className="flex flex-row items-start">
-                <View className="w-2 h-2 mt-1 mr-2 bg-teal-500 rounded-full" />
-                <View>
-                  <ThemedText className="font-bold">Jalan Pagi di Taman</ThemedText>
-                  <ThemedText className="text-gray-500">Kegiatan</ThemedText>
-                </View>
-              </View>
-              <View className="flex flex-row items-center">
-                <ThemedText className="mr-2">10:00</ThemedText>
-                <Ionicons name="chevron-down" size={20} color="gray" />
-              </View>
-            </View>
-          </View>
-
-          <View className="px-4 py-3 mb-3 bg-gray-100 rounded-lg">
-            <View className="flex flex-row items-center justify-between">
-              <View className="flex flex-row items-start">
-                <View className="w-2 h-2 mt-1 mr-2 bg-pink-500 rounded-full" />
-                <View>
-                  <ThemedText className="font-bold">Minum Obat (sore)</ThemedText>
-                  <ThemedText className="text-gray-500">Rutinitas</ThemedText>
-                </View>
-              </View>
-              <View className="flex flex-row items-center">
-                <ThemedText className="mr-2">17.30</ThemedText>
-                <Ionicons name="chevron-down" size={20} color="gray" />
-              </View>
-            </View>
-          </View>
-
-          <ThemedText className="mt-5 mb-3 text-lg font-bold">Postingan</ThemedText>
-
-          <View className="flex flex-row flex-wrap">
-            {imageSources.map((source, index) => (
-              <Image
-                key={index}
-                source={{ uri: source }}
-                style={{
-                  width: '30%', // Adjust for 3-column grid
-                  height: 100, // Adjust as needed
-                  marginBottom: 8,
-                  marginRight: '3.33%', // Add spacing between columns
-                }}
-              />
-            ))}
-          </View>
+          <FlatList
+            data={posts}
+            renderItem={renderImagePost}
+            keyExtractor={(item) => item.id as string}
+            numColumns={3}
+            scrollEnabled={false}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
