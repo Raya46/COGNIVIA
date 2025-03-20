@@ -1,13 +1,42 @@
-import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Image } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { ThemedText } from "@/components/ThemedText";
 import CLogo from "@/assets/images/C.png";
+import TextInputCustom from "@/components/TextInputCustom";
+import { ThemedText } from "@/components/ThemedText";
+import { useLogin, useRegister } from "@/hooks/useUser";
+import { User, userSchema } from "@/types/user.type";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { ActivityIndicator, Image, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const LoginScreen = () => {
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const { mutate: login, isLoading } = useLogin();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<User>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = (data: User) => {
+    console.log(data);
+    login(data, {
+      onError: (error: any) => {
+        const errorMsg =
+          error.response?.data?.message || "Invalid username or password";
+
+        setErrorMessage(errorMsg); // Set error message to be displayed
+      },
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white px-6">
@@ -31,26 +60,34 @@ const LoginScreen = () => {
         <ThemedText className="text-gray-500">
           Belum punya akun,{" "}
           <ThemedText
-            onPress={() => router.push("/register")}
+            onPress={() => router.replace("/register")}
             className="text-blue-500"
           >
             Daftar Disini
           </ThemedText>
         </ThemedText>
 
+        {errorMessage && (
+          <View className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md mb-4">
+            <ThemedText className="text-sm">{errorMessage}</ThemedText>
+          </View>
+        )}
+
         {/* Input Email */}
         <View className="mt-8">
           <ThemedText className="text-gray-700 mb-2 font-bold">
             Nama Pengguna / Email
           </ThemedText>
-          <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
-            <Ionicons name="mail-outline" size={20} color="gray" />
-            <TextInput
-              placeholder="Pengguna@email.com"
-              keyboardType="email-address"
-              className="flex-1 ml-2 text-gray-700"
-            />
-          </View>
+          <TextInputCustom
+            placeholder="@email.com"
+            name="email"
+            control={control}
+          />
+          {errors.email && (
+            <ThemedText className="text-red-500 text-xs">
+              {errors.email.message}
+            </ThemedText>
+          )}
         </View>
 
         {/* Input Password */}
@@ -58,37 +95,31 @@ const LoginScreen = () => {
           <ThemedText className="text-gray-700 mb-2 font-bold">
             Kata Sandi
           </ThemedText>
-          <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
-            <Ionicons name="lock-closed-outline" size={20} color="gray" />
-            <TextInput
-              placeholder="Password..."
-              secureTextEntry={!passwordVisible}
-              className="flex-1 ml-2 text-gray-700"
-            />
-            <TouchableOpacity
-              onPress={() => setPasswordVisible(!passwordVisible)}
-            >
-              <Ionicons
-                name={passwordVisible ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color="gray"
-              />
-            </TouchableOpacity>
-          </View>
+          <TextInputCustom
+            placeholder="password"
+            name="password"
+            control={control}
+            showable
+          />
           <TouchableOpacity className="mt-2">
             <ThemedText className="text-blue-500 text-right">
               Lupa Password?
             </ThemedText>
           </TouchableOpacity>
+          {errors.password && (
+            <ThemedText className="text-red-500 text-xs">
+              {errors.password.message}
+            </ThemedText>
+          )}
         </View>
 
         {/* Tombol Login */}
         <TouchableOpacity
-          onPress={() => router.push("/home")}
+          onPress={handleSubmit(onSubmit)}
           className="mt-6 bg-teal-500 p-3 rounded-lg items-center"
         >
           <ThemedText className="text-white text-lg font-semibold">
-            Login
+            {isLoading ? <ActivityIndicator color={"#fff"} /> : "Login"}
           </ThemedText>
         </TouchableOpacity>
 
