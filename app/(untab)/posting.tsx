@@ -19,26 +19,29 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
-const initialTags = ["Kue", "Pagi", "Bahagia"];
 const familyMembers = ["Ega", "Faris", "Vio", "Dhifan", "Gopal", "Aiman"];
 
 const PostingScreen = () => {
   const { userData } = useAuth();
   const { selectedImage } = useLocalSearchParams();
-  const [tags, setTags] = useState(initialTags);
+  const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag)) {
-      setTags([...tags, newTag]);
+      const updatedTags = [...tags, newTag];
+      setTags(updatedTags);
+      setValue("memory_word", updatedTags.join(","));
       setNewTag("");
     }
   };
 
   const removeTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
+    const updatedTags = tags.filter((t) => t !== tag);
+    setTags(updatedTags);
+    setValue("memory_word", updatedTags.join(","));
   };
 
   const { mutate: createPost, isLoading } = useCreatePost();
@@ -93,20 +96,25 @@ const PostingScreen = () => {
   };
 
   const onSubmit = (data: Post) => {
-    console.log(data);
-    const postData = {
-      ...data,
-      memory_word: tags.join(","),
-      image: selectedImage as string,
-    };
-    createPost(postData, {
-      onError: (error: any) => {
-        const errorMsg =
-          error.response?.data?.message || "Invalid username or password";
+    try {
+      console.log("Data from form:", data); // debugging
 
-        setErrorMessage(errorMsg);
-      },
-    });
+      const postData = {
+        title: data.title,
+        caption: data.caption,
+        image_date: data.image_date,
+        memory_word: tags.join(","),
+        image: selectedImage as string,
+        user_id: userData?.id as string,
+      };
+
+      console.log("Data yang akan dikirim:", postData); // debugging
+
+      createPost(postData);
+    } catch (error) {
+      console.error("Error dalam onSubmit:", error);
+      setErrorMessage("Terjadi kesalahan saat membuat post");
+    }
   };
 
   return (
@@ -229,17 +237,18 @@ const PostingScreen = () => {
           </View>
 
           <View className="flex-row items-center mt-2">
-            <TouchableOpacity onPress={addTag}>
-              <Ionicons name="add" size={24} color="gray" />
-            </TouchableOpacity>
-            <TextInputCustom
-              name="memory_word"
-              control={control}
-              placeholder="Masukkan Kata Memori"
-              value={newTag}
-              onChangeText={setNewTag}
-              className="ml-2 text-gray-700"
-            />
+            <View className="flex-1">
+              <TextInputCustom
+                name="memory_word"
+                control={control}
+                placeholder="Masukkan Kata Memori"
+                value={newTag}
+                onChangeText={setNewTag}
+                onSubmitEditing={addTag}
+                leftIcon="pricetag-outline"
+                className="flex-1"
+              />
+            </View>
           </View>
         </View>
         <TouchableOpacity

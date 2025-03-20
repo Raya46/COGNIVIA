@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserData({
           id: user.id,
           email: user.email || "",
-          username: user.email?.split("@")[0] || "",
+          username: user.username,
         });
       } else {
         setUserData(userData);

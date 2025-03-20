@@ -10,7 +10,52 @@ export const useGetPost = () => {
     queryFn: async () => {
       const { data: posts, error } = await supabase
         .from("posts")
-        .select("*")
+        .select(
+          `id, title, caption, image, created_at,users(
+          username
+          )`
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Dapatkan URL publik untuk setiap gambar
+      const postsWithImageUrls = await Promise.all(
+        posts.map(async (post) => {
+          if (post.image) {
+            const { data: imageUrl } = supabase.storage
+              .from("postimage")
+              .getPublicUrl(post.image);
+
+            return {
+              ...post,
+              image_url: imageUrl.publicUrl,
+            };
+          }
+          return post;
+        })
+      );
+
+      console.log(postsWithImageUrls);
+      return postsWithImageUrls;
+    },
+  });
+
+  return { posts, isLoading };
+};
+
+export const useGetPostByUser = (user_id: string) => {
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["posts", user_id],
+    queryFn: async () => {
+      const { data: posts, error } = await supabase
+        .from("posts")
+        .select(
+          `id, title, caption, image, created_at,user_id, users(
+          username
+          )`
+        )
+        .eq("user_id", user_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -85,21 +130,35 @@ export const useCreatePost = () => {
         }
       }
 
+      // Tambahkan console.log untuk debugging
+      console.log("Data yang akan dikirim ke server:", {
+        ...data,
+        image: imagePath || null,
+      });
+
       const { data: postData, error } = await supabase
         .from("posts")
         .insert({
-          ...data,
+          title: data.title,
+          caption: data.caption,
           image: imagePath || null,
+          memory_word: data.memory_word,
+          image_date: data.image_date,
+          user_id: data.user_id,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saat membuat post:", error);
+        throw error;
+      }
 
       return postData;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts", variables.user_id] });
       router.replace("/home");
     },
     onError: (error) => {

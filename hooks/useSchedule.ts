@@ -2,25 +2,28 @@ import { supabase } from "@/supabase/supabase";
 import { Schedule } from "@/types/schedule.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export const useGetSchedule = (selectedDate?: string) => {
+export const useGetSchedule = (selectedDate?: string, user_id?: string) => {
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["schedules", selectedDate],
+    queryKey: ["schedules", selectedDate, user_id],
     queryFn: async () => {
       let query = supabase
         .from("schedules")
         .select("*")
         .order("time", { ascending: true });
 
-      // Filter berdasarkan tanggal jika ada
       if (selectedDate) {
         query = query.eq("date", selectedDate);
+      }
+
+      if (user_id) {
+        query = query.eq("user_id", user_id);
       }
 
       const { data: schedules, error } = await query;
       if (error) throw error;
       return schedules;
     },
-    enabled: true, // Query akan selalu dijalankan
+    enabled: true,
   });
   return { schedules, isLoading };
 };

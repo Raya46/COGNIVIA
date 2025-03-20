@@ -51,7 +51,7 @@ const ScheduleScreen = () => {
     },
   });
 
-  const { schedules, isLoading } = useGetSchedule(selectedDate);
+  const { schedules, isLoading } = useGetSchedule(selectedDate, userData?.id);
   const { mutate: createSchedule, isLoading: isCreating } = useCreateSchedule();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(new Date());

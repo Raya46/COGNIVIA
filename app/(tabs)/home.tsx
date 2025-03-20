@@ -42,7 +42,7 @@ const Page = () => {
     return (
       <PostCard
         title={item.title}
-        name={userData?.username || "User"}
+        name={item?.users?.username as string}
         created_at={formatDate(item.created_at)}
         image_url={(item.image_url as string) || (item.image as string)}
         caption={item.caption}
@@ -68,10 +68,7 @@ const Page = () => {
             />
             <View className="ml-3">
               <ThemedText className="text-lg font-semibold">
-                Good morning,{" "}
-                {userData?.username?.includes("@")
-                  ? userData?.username?.split("@")[0]
-                  : userData?.username}
+                Good morning, {userData?.username}
               </ThemedText>
               <ThemedText className="text-gray-500">
                 {userData?.email}

@@ -90,7 +90,7 @@ const RegisterScreen = () => {
             </ThemedText>
           )}
         </View>
-        <View className="mt-8">
+        <View className="mt-4">
           <ThemedText className="text-gray-700 mb-2 font-bold">
             Username
           </ThemedText>
