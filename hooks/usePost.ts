@@ -151,3 +151,34 @@ export const useUpdatePost = () => {
   });
   return { mutate: mutation.mutate, isLoading: mutation.isPending };
 };
+
+export const useGetPostById = (id: string) => {
+  const { data: post, isLoading } = useQuery({
+    queryKey: [`post-${id}`],
+    queryFn: async () => {
+      const { data: post, error } = await supabase
+        .from("posts")
+        .select()
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+
+      if (post && post.image) {
+        const { data: imageUrl } = supabase.storage
+          .from("postimage")
+          .getPublicUrl(post.image);
+
+        return {
+          ...post,
+          image_url: imageUrl.publicUrl,
+        };
+      }
+
+      return post;
+    },
+    enabled: !!id,
+  });
+
+  return { post, isLoading };
+};

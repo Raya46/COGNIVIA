@@ -1,29 +1,33 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Image, ImageSourcePropType, View } from "react-native";
+import { Image, TouchableOpacity, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 
-interface PostCard {
+export interface PostCardType {
+  id?: string;
+  title: string;
   name: string;
-  time: string;
-  imgUrl: string;
+  created_at: string;
+  image_url: string;
+  image?: string;
   caption: string;
   like: number;
   comment: number;
   share: number;
   imageProfile: string;
+  memory_word?: string;
 }
 
 const PostCard = ({
+  title,
   name,
-  time,
-  imgUrl,
-  caption,
+  created_at,
+  image_url,
   like,
   comment,
   share,
   imageProfile,
-}: PostCard) => {
+}: PostCardType) => {
   return (
     <View className="bg-white rounded-lg shadow p-4 mt-4">
       {/* Post Header */}
@@ -37,7 +41,7 @@ const PostCard = ({
           />
           <View className="ml-3">
             <ThemedText className="font-semibold">{name}</ThemedText>
-            <ThemedText className="text-gray-500">{time}</ThemedText>
+            <ThemedText className="text-gray-500">{created_at}</ThemedText>
           </View>
         </View>
         <Ionicons name="ellipsis-horizontal" size={20} color="gray" />
@@ -47,14 +51,14 @@ const PostCard = ({
       <View className="mt-3">
         <Image
           source={{
-            uri: imgUrl,
+            uri: image_url,
           }}
           className="w-full h-40 rounded-lg"
         />
       </View>
 
       {/* Post Caption */}
-      <ThemedText className="mt-2 text-gray-600">{caption}</ThemedText>
+      <ThemedText className="mt-2 text-gray-600">{title}</ThemedText>
 
       {/* Post Actions */}
       <View className="flex-row justify-between mt-3">

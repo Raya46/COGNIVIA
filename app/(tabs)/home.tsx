@@ -1,4 +1,4 @@
-import PostCard from "@/components/PostCard";
+import PostCard, { PostCardType } from "@/components/PostCard";
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/AuthContext";
 import { useGetPost } from "@/hooks/usePost";
@@ -37,6 +37,24 @@ const Page = () => {
       });
     }
   };
+
+  const renderPostCard = ({ item }: { item: PostCardType }) => {
+    return (
+      <PostCard
+        title={item.title}
+        name={userData?.username || "User"}
+        created_at={formatDate(item.created_at)}
+        image_url={(item.image_url as string) || (item.image as string)}
+        caption={item.caption}
+        like={item.like || 0}
+        comment={item.comment || 0}
+        share={item.share || 0}
+        imageProfile="https://picsum.photos/100/100"
+      />
+    );
+  };
+
+  const keyExtractor = (item: PostCardType) => item.id as string;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -119,19 +137,8 @@ const Page = () => {
               data={posts}
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <PostCard
-                  name={userData?.username || "User"}
-                  time={formatDate(item.created_at)}
-                  imgUrl={item.image_url || item.image}
-                  caption={item.caption}
-                  like={item.like || 0}
-                  comment={item.comment || 0}
-                  share={item.share || 0}
-                  imageProfile="https://picsum.photos/100/100"
-                />
-              )}
+              keyExtractor={keyExtractor}
+              renderItem={renderPostCard}
             />
           ) : (
             <View className="py-8 flex items-center justify-center">
