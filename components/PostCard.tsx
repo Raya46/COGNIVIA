@@ -1,19 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Image, TouchableOpacity, View } from "react-native";
+import { Image, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 
 export interface PostCardType {
   id?: string;
   title: string;
   name: string;
+  users?: {
+    username: string;
+  };
   created_at: string;
   image_url: string;
   image?: string;
   caption: string;
-  like: number;
-  comment: number;
-  share: number;
+  like?: number;
+  comment?: number;
+  share?: number;
   imageProfile: string;
   memory_word?: string;
 }

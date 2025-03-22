@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useGetPost } from "@/hooks/usePost";
+import { useGetPostByUser } from "@/hooks/usePost";
 import { router } from "expo-router";
 import { PostCardType } from "@/components/PostCard";
 import { useGetSchedule } from "@/hooks/useSchedule";
@@ -18,9 +18,12 @@ import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
 import { useAuth } from "@/context/AuthContext";
 
 const Page = () => {
-  const { posts, isLoading } = useGetPost();
   const { userData } = useAuth();
-  const { schedules, isLoading: scheduleLoading } = useGetSchedule();
+  const { posts, isLoading } = useGetPostByUser(userData?.id as string);
+  const { schedules, isLoading: scheduleLoading } = useGetSchedule(
+    undefined,
+    userData?.id
+  );
   const renderSchedule = ({ item }: { item: ScheduleCardProps }) => {
     return (
       <ScheduleCard

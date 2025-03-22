@@ -7,8 +7,8 @@ export const postSchema = z.object({
   image: z.string(),
   memory_word: z.string(),
   user_id: z.string(),
-  created_at: z.string(),
-  image_url: z.string(),
+  created_at: z.string().optional(),
+  image_url: z.string().optional(),
 });
 
 export type Post = z.infer<typeof postSchema>;

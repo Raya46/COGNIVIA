@@ -71,8 +71,14 @@ export const useRegister = () => {
         );
       }
     },
-    onSuccess: () => {
-      router.replace("/home");
+    onSuccess: (data, variables) => {
+      router.replace({
+        pathname: "/home",
+        params: {
+          username: variables.username,
+          email: variables.email,
+        },
+      });
     },
     onError: (error) => {
       console.error("Register error:", error);

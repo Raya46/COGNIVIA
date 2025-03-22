@@ -119,7 +119,7 @@ const Page = () => {
         setAnswer(result.answer);
         Speech.speak(result.answer, {
           language: "id-ID",
-          onError: (error) => console.error("Speech error:", error),
+          onError: (error) => console.error("Speech error:", error.message),
         });
       }
     } catch (error) {
@@ -153,7 +153,11 @@ const Page = () => {
             <ThemedText className="font-bold text-lg">
               {params.title || post?.title}
             </ThemedText>
-            <ThemedText>{params.created_at || post?.created_at}</ThemedText>
+            <ThemedText>
+              {new Date(params.created_at || post?.created_at).toLocaleString(
+                "id-ID"
+              )}
+            </ThemedText>
           </View>
         </View>
         <View className="rounded-lg bg-gray-100 p-6 mx-4 my-4">
