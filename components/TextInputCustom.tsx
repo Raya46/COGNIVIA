@@ -12,7 +12,7 @@ interface TextInputCustomProps extends TextInputProps {
   onComplete?: () => void;
   value?: string;
   onChangeText?: (text: string) => void;
-  leftIcon?: string;
+  leftIcon?: keyof typeof Ionicons.glyphMap;
   onSubmitEditing?: () => void;
 }
 

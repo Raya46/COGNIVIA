@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGetPost } from "@/hooks/usePost";
 import { useLogout } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import {
   FlatList,
@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Page = () => {
+  const params = useLocalSearchParams();
   const { mutate: logout } = useLogout();
   const { userData } = useAuth();
   const { posts, isLoading } = useGetPost();
@@ -68,16 +69,16 @@ const Page = () => {
             />
             <View className="ml-3">
               <ThemedText className="text-lg font-semibold">
-                Good morning, {userData?.username}
+                Good morning, {userData?.username || params.username}
               </ThemedText>
               <ThemedText className="text-gray-500">
-                {userData?.email}
+                {userData?.email || params.email}
               </ThemedText>
             </View>
           </View>
           <Ionicons
             onPress={() => logout()}
-            name="notifications-outline"
+            name="log-out-outline"
             size={24}
             color="black"
           />

@@ -14,9 +14,9 @@ export interface PostCardType {
   image_url: string;
   image?: string;
   caption: string;
-  like: number;
-  comment: number;
-  share: number;
+  like?: number;
+  comment?: number;
+  share?: number;
   imageProfile: string;
   memory_word?: string;
 }

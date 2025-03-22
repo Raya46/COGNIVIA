@@ -31,7 +31,8 @@ export default function Layout() {
       try {
         const selectedImageUri = result.assets[0].uri;
         const fileName = selectedImageUri.split("/").pop();
-        const newPath = FileSystem.documentDirectory + fileName;
+        const newPath = ((FileSystem.documentDirectory as string) +
+          fileName) as string;
 
         await FileSystem.copyAsync({
           from: selectedImageUri,
