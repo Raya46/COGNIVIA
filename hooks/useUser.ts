@@ -53,15 +53,35 @@ export const useRegister = () => {
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            username: data.username,
+          },
+        },
       });
-      if (error) throw error;
 
-      if (authData.user) {
-        await supabase.from("users").insert({
-          email: data.email,
-          username: data.username,
-          password: data.password,
-        });
+      if (error) {
+        console.error("Registration error:", error);
+        throw error;
+      }
+
+      if (!authData.user) {
+        throw new Error("Gagal mendaftarkan pengguna");
+      }
+
+      console.log("Auth data after signup:", authData);
+
+      const { error: insertError } = await supabase.from("users").insert({
+        id: authData.user.id,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+      });
+
+      if (insertError) {
+        console.error("Error inserting user data:", insertError);
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw insertError;
       }
 
       if (authData.session) {
@@ -70,13 +90,17 @@ export const useRegister = () => {
           authData.session.access_token as string
         );
       }
+
+      return authData;
     },
     onSuccess: (data, variables) => {
+      console.log("Registration successful, navigating to home");
       router.replace({
         pathname: "/home",
         params: {
           username: variables.username,
           email: variables.email,
+          userId: data.user?.id,
         },
       });
     },
