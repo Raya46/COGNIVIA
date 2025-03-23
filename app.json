@@ -13,6 +13,9 @@
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "android": {
@@ -23,8 +26,15 @@
       },
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.RECORD_AUDIO"
-      ]
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "bundler": "metro",
@@ -73,6 +83,9 @@
       "eas": {
         "projectId": "b1f4d5ce-adf4-482e-b598-ef044d8e7e1b"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b1f4d5ce-adf4-482e-b598-ef044d8e7e1b"
     }
   }
 }
