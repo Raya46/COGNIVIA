@@ -1,50 +1,29 @@
-# Welcome to your Expo app 👋
+# Counter Avenue
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Tim Pengembang
 
-## Get started
+### 1. Mohammad Hervin Abydzar Hakim  
 
-1. Install dependencies
+### 2. Tegar Fadillah  
 
-   ```bash
-   npm install
-   ```
+### 3. Muhammad Raya Ar Rizki  
 
-2. Start the app
+### 4. Ramadhika Darmaputra  
 
-   ```bash
-    npx expo start
-   ```
+### 5. Valtrizt Khalifah Warri
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Penjelasan Singkat Produk: Cognivia
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Cognivia dibangun dengan arsitektur modern berbasis **Supabase, React Native, dan AI-powered services**, menghadirkan solusi cerdas bagi penderita **demensia** dan **caregiver**.
 
-## Get a fresh project
+- **Data pengguna** tersimpan aman dalam **Supabase Database & Authentication**.
+- **Fitur Guess Me** memanfaatkan **React Native ML Kit** untuk membantu pengenalan kerabat.
+- **Safe Zone** menggunakan **Google Maps API** untuk pemantauan lokasi real-time.
+- **Recall Memory** didukung oleh **OpenAI GPT API** untuk **speech recognition** serta **text-to-speech**, membantu pengguna mengingat informasi penting.
+- **Dikembangkan dengan**: React Native, Typescript, dan Tailwind CSS.
+- **Expo** memastikan performa aplikasi tetap stabil di berbagai perangkat.
 
-When you're ready, run:
+Cognivia menawarkan pengalaman pengguna yang **interaktif** dan **responsif**, mempermudah penderita demensia dalam beraktivitas sehari-hari dengan dukungan teknologi terkini.
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
