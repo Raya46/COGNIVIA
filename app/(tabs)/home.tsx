@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGetPost } from "@/hooks/usePost";
 import { useLogout } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import React from "react";
 import {
   FlatList,
@@ -16,9 +16,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Page = () => {
-  const params = useLocalSearchParams();
   const { mutate: logout } = useLogout();
   const { userData } = useAuth();
+  console.log("userdata", userData);
   const { posts, isLoading } = useGetPost();
 
   const formatDate = (dateString: string) => {
@@ -69,10 +69,10 @@ const Page = () => {
             />
             <View className="ml-3">
               <ThemedText className="text-lg font-semibold">
-                Good morning, {userData?.username || params.username}
+                Good morning, {userData?.username}
               </ThemedText>
               <ThemedText className="text-gray-500">
-                {userData?.email || params.email}
+                {userData?.email}
               </ThemedText>
             </View>
           </View>
