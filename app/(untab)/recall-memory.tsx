@@ -9,9 +9,15 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  FlatList,
+  Animated,
+  Easing,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomSheet, {
+  BottomSheetScrollView,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   ExpoSpeechRecognitionModule,
@@ -24,14 +30,57 @@ import {
   useRecallMemories,
 } from "@/hooks/useRecallMemory";
 import * as Speech from "expo-speech";
+
 const Page = () => {
   const params = useLocalSearchParams();
   const { userData } = useAuth();
   const { post, isLoading: postLoading } = useGetPostById(params.id as string);
   const [recognizing, setRecognizing] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [speaking, setSpeaking] = useState(false);
 
-  // Menggunakan hooks TanStack Query
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
+
+  const startPulseAnimation = () => {
+    animatedValue.setValue(0);
+
+    pulseAnimation.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    pulseAnimation.current.start();
+  };
+
+  const stopPulseAnimation = () => {
+    if (pulseAnimation.current) {
+      pulseAnimation.current.stop();
+    }
+  };
+
+  const pulseScale = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.2],
+  });
+
+  const pulseOpacity = animatedValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.5, 1, 0.5],
+  });
+
   const createRecallMemoryMutation = useCreateRecallMemory();
   const { data: chatHistory = [], isLoading: historyLoading } =
     useRecallMemories(params.id as string);
@@ -97,6 +146,33 @@ const Page = () => {
     }
   };
 
+  const speakWithAnimation = (text: string) => {
+    setSpeaking(true);
+    startPulseAnimation();
+
+    Speech.speak(text, {
+      language: "id-ID",
+      onStart: () => {
+        console.log("Speech started");
+      },
+      onDone: () => {
+        console.log("Speech done");
+        setSpeaking(false);
+        stopPulseAnimation();
+      },
+      onStopped: () => {
+        console.log("Speech stopped");
+        setSpeaking(false);
+        stopPulseAnimation();
+      },
+      onError: (error) => {
+        console.error("Speech error:", error.message);
+        setSpeaking(false);
+        stopPulseAnimation();
+      },
+    });
+  };
+
   const processQuestion = async (question: string) => {
     if (!post || !userData?.id || !question.trim()) {
       console.log("Missing required data:", {
@@ -104,27 +180,124 @@ const Page = () => {
         userId: userData?.id,
         question,
       });
+      Alert.alert(
+        "Error",
+        "Data tidak lengkap, pastikan postingan sudah dimuat dengan benar"
+      );
       return;
     }
 
     try {
-      console.log("Processing question:", question);
-      const result = await createRecallMemoryMutation.mutateAsync({
-        question,
-        post,
-        userId: userData.id,
-      });
+      console.log(
+        "[Production Debug] Processing question with Gemini:",
+        question
+      );
+      console.log("[Production Debug] Post data:", JSON.stringify(post));
+      console.log("[Production Debug] User ID:", userData.id);
 
-      if (result.answer) {
+      setAnswer("");
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Timeout: Permintaan terlalu lama")),
+          30000
+        )
+      );
+
+      const result = (await Promise.race([
+        createRecallMemoryMutation.mutateAsync({
+          question,
+          post,
+          userId: userData.id,
+        }),
+        timeoutPromise,
+      ])) as any;
+
+      console.log(
+        "[Production Debug] Gemini result received:",
+        result ? "yes" : "no"
+      );
+
+      if (result && result.answer) {
         setAnswer(result.answer);
-        Speech.speak(result.answer, {
-          language: "id-ID",
-          onError: (error) => console.error("Speech error:", error.message),
+        speakWithAnimation(result.answer);
+      } else {
+        console.log(
+          "[Production Debug] No answer in result, using fallback question"
+        );
+
+        const fallbackResult = await createRecallMemoryMutation.mutateAsync({
+          question: "Bantu saya mengingat detail dari postingan ini",
+          post,
+          userId: userData.id,
         });
+
+        if (fallbackResult && fallbackResult.answer) {
+          setAnswer(fallbackResult.answer);
+          speakWithAnimation(fallbackResult.answer);
+        } else {
+          Alert.alert(
+            "Info",
+            "Tidak dapat memproses pertanyaan saat ini, silakan coba lagi nanti"
+          );
+        }
       }
-    } catch (error) {
-      console.error("Error processing question:", error);
-      Alert.alert("Error", "Terjadi kesalahan saat memproses pertanyaan");
+    } catch (error: any) {
+      console.error(
+        "[Production Debug] Error processing question with Gemini:",
+        error
+      );
+      console.error(
+        "[Production Debug] Error message:",
+        error.message || "Unknown error"
+      );
+
+      try {
+        console.log("[Production Debug] Trying fallback question");
+        const fallbackResult = await createRecallMemoryMutation.mutateAsync({
+          question: "Jelaskan tentang postingan ini secara singkat",
+          post,
+          userId: userData.id,
+        });
+
+        if (fallbackResult && fallbackResult.answer) {
+          setAnswer(fallbackResult.answer);
+          speakWithAnimation(fallbackResult.answer);
+        } else {
+          Alert.alert(
+            "Error",
+            "Tidak dapat menghasilkan jawaban. Silakan coba lagi nanti."
+          );
+        }
+      } catch (fallbackError: any) {
+        console.error(
+          "[Production Debug] Fallback also failed:",
+          fallbackError
+        );
+
+        if (
+          error.message?.includes("network") ||
+          error.message?.includes("timeout")
+        ) {
+          Alert.alert(
+            "Masalah Jaringan",
+            "Pastikan Anda terhubung ke internet yang stabil dan coba lagi"
+          );
+        } else if (
+          error.message?.includes("AI") ||
+          error.message?.includes("Gemini")
+        ) {
+          Alert.alert(
+            "Masalah dengan AI",
+            "Layanan AI sedang mengalami gangguan. Silakan coba lagi nanti."
+          );
+        } else {
+          Alert.alert(
+            "Error",
+            "Terjadi kesalahan saat memproses. Silakan coba lagi atau gunakan pertanyaan yang berbeda."
+          );
+        }
+      }
     }
   };
 
@@ -135,6 +308,15 @@ const Page = () => {
     sheetRef.current?.snapToIndex(index);
     setIsOpen(true);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (speaking) {
+        Speech.stop();
+        stopPulseAnimation();
+      }
+    };
+  }, [speaking]);
 
   return (
     <GestureHandlerRootView>
@@ -173,6 +355,40 @@ const Page = () => {
           </ThemedText>
         </View>
         <ThemedText className="text-center">{transcript}</ThemedText>
+
+        {speaking && (
+          <View className="items-center mt-2 mb-2">
+            <View className="flex-row items-center">
+              <Animated.View
+                style={{
+                  transform: [{ scale: pulseScale }],
+                  opacity: pulseOpacity,
+                }}
+                className="bg-teal-500 h-3 w-3 rounded-full mx-0.5"
+              />
+              <Animated.View
+                style={{
+                  transform: [{ scale: pulseScale }],
+                  opacity: pulseOpacity,
+                  animationDelay: "300ms",
+                }}
+                className="bg-teal-500 h-3 w-3 rounded-full mx-0.5"
+              />
+              <Animated.View
+                style={{
+                  transform: [{ scale: pulseScale }],
+                  opacity: pulseOpacity,
+                  animationDelay: "600ms",
+                }}
+                className="bg-teal-500 h-3 w-3 rounded-full mx-0.5"
+              />
+              <ThemedText className="text-teal-600 ml-2">
+                Berbicara...
+              </ThemedText>
+            </View>
+          </View>
+        )}
+
         <View className="flex flex-row justify-between items-center mx-10 mt-10">
           <TouchableOpacity
             onPress={() => handleSnapPress(0)}
@@ -188,8 +404,13 @@ const Page = () => {
             <TouchableOpacity
               onPress={handleStart}
               className="rounded-full bg-[#2A9E9E] p-6 -mt-10"
+              disabled={speaking}
             >
-              <Ionicons name="mic" size={36} color={"#fff"} />
+              <Ionicons
+                name="mic"
+                size={36}
+                color={speaking ? "#ccc" : "#fff"}
+              />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -200,7 +421,14 @@ const Page = () => {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => {
+              if (speaking) {
+                Speech.stop();
+                setSpeaking(false);
+                stopPulseAnimation();
+              }
+              router.back();
+            }}
             className="rounded-full bg-gray-100 p-5"
           >
             <Ionicons name="close" size={28} color="red" />
@@ -213,7 +441,10 @@ const Page = () => {
           onClose={() => setIsOpen(false)}
           index={-1}
         >
-          <BottomSheetView className="p-4">
+          <BottomSheetScrollView
+            className="p-4"
+            showsVerticalScrollIndicator={false}
+          >
             <ThemedText className="text-center font-bold mb-4">
               Riwayat Percakapan
             </ThemedText>
@@ -226,39 +457,29 @@ const Page = () => {
                 </ThemedText>
               </View>
             )}
-
-            {answer && (
-              <View className="bg-teal-50 p-4 rounded-lg mb-4">
-                <ThemedText className="font-bold">
-                  Pertanyaan Terakhir:
-                </ThemedText>
-                <ThemedText className="mt-2">{transcript}</ThemedText>
-                <ThemedText className="font-bold mt-4">Jawaban:</ThemedText>
-                <ThemedText className="mt-2">{answer}</ThemedText>
-              </View>
-            )}
-
-            <ScrollView>
-              {historyLoading ? (
-                <ActivityIndicator size="small" color="#2A9E9E" />
-              ) : (
-                chatHistory.map((chat, index) => (
+            {historyLoading ? (
+              <ActivityIndicator size="small" color="#2A9E9E" />
+            ) : (
+              <FlatList
+                scrollEnabled={false}
+                data={chatHistory}
+                renderItem={({ item, index }) => (
                   <View
-                    key={chat.id || index}
+                    key={item.id || index}
                     className="bg-gray-50 p-4 rounded-lg mb-2"
                   >
                     <ThemedText className="font-bold">
-                      Q: {chat.question}
+                      Q: {item.question}
                     </ThemedText>
-                    <ThemedText className="mt-2">A: {chat.answer}</ThemedText>
+                    <ThemedText className="mt-2">A: {item.answer}</ThemedText>
                     <ThemedText className="text-xs text-gray-500 mt-2">
-                      {new Date(chat.created_at).toLocaleString("id-ID")}
+                      {new Date(item.created_at).toLocaleString("id-ID")}
                     </ThemedText>
                   </View>
-                ))
-              )}
-            </ScrollView>
-          </BottomSheetView>
+                )}
+              />
+            )}
+          </BottomSheetScrollView>
         </BottomSheet>
       </SafeAreaView>
     </GestureHandlerRootView>
