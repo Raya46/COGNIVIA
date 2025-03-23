@@ -25,7 +25,7 @@ Cognivia dibangun dengan arsitektur modern berbasis **Supabase, React Native, da
 - **Data pengguna** tersimpan aman dalam **Supabase Database & Authentication**.
 - **Fitur Guess Me** memanfaatkan **React Native ML Kit** untuk membantu pengenalan kerabat.
 - **Safe Zone** menggunakan **Google Maps API** untuk pemantauan lokasi real-time.
-- **Recall Memory** didukung oleh **OpenAI GPT API** untuk **speech recognition** serta **text-to-speech**, membantu pengguna mengingat informasi penting.
+- **Recall Memory** didukung oleh **Gemini API** untuk **speech recognition** serta **text-to-speech**, membantu pengguna mengingat informasi penting.
 - **Dikembangkan dengan**: React Native, Typescript, dan Tailwind CSS.
 - **Expo** memastikan performa aplikasi tetap stabil di berbagai perangkat.
 
