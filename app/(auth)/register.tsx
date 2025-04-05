@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useRegister } from "@/hooks/useUser";
 import { User, userSchema } from "@/types/user.type";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -17,13 +18,16 @@ const RegisterScreen = () => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
+    watch,
   } = useForm<User>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       email: "",
       password: "",
       username: "",
+      role: "penderita",
     },
   });
 
@@ -106,6 +110,20 @@ const RegisterScreen = () => {
           )}
         </View>
 
+        <View className="mt-4">
+          <ThemedText className="text-gray-700 font-bold mb-2">Role</ThemedText>
+          <View className="border border-gray-300 rounded-lg">
+            <Picker
+              selectedValue={watch("role")}
+              onValueChange={(value) => setValue("role", value)}
+            >
+              <Picker.Item label="Select Role" value="" />
+              <Picker.Item label="Penderita" value="penderita" />
+              <Picker.Item label="Caregiver" value="caregiver" />
+            </Picker>
+          </View>
+        </View>
+
         {/* Input Password */}
         <View className="mt-4">
           <ThemedText className="text-gray-700 mb-2 font-bold">
@@ -133,9 +151,15 @@ const RegisterScreen = () => {
           onPress={handleSubmit(onSubmit)}
           className="mt-6 bg-teal-500 p-3 rounded-lg items-center"
         >
-          <ThemedText className="text-white text-lg font-semibold">
-            Register
-          </ThemedText>
+          {isLoading ? (
+            <ThemedText className="text-white text-lg font-semibold">
+              Loading...
+            </ThemedText>
+          ) : (
+            <ThemedText className="text-white text-lg font-semibold">
+              Register
+            </ThemedText>
+          )}
         </TouchableOpacity>
 
         {/* Tombol Login dengan Google */}

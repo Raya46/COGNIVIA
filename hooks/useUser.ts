@@ -1,7 +1,7 @@
 import { supabase } from "@/supabase/supabase";
-import { User } from "@/types/user.type";
+import { SafeZone, User } from "@/types/user.type";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 
 export const useLogin = () => {
@@ -56,6 +56,7 @@ export const useRegister = () => {
         options: {
           data: {
             username: data.username,
+            role: data.role,
           },
         },
       });
@@ -76,6 +77,7 @@ export const useRegister = () => {
         email: data.email,
         username: data.username,
         password: data.password,
+        role: data.role,
       });
 
       if (insertError) {
@@ -89,6 +91,10 @@ export const useRegister = () => {
           "token",
           authData.session.access_token as string
         );
+        await AsyncStorage.setItem(
+          "role",
+          authData.session.user.role as string
+        );
       }
 
       return authData;
@@ -101,6 +107,7 @@ export const useRegister = () => {
           username: variables.username,
           email: variables.email,
           userId: data.user?.id,
+          role: data.user?.role as string,
         },
       });
     },
@@ -130,12 +137,14 @@ export const useCheckSession = () => {
 
       if (error || !session) {
         await AsyncStorage.removeItem("token");
+        await AsyncStorage.removeItem("role");
         return false;
       }
 
       // Perbarui token di AsyncStorage jika perlu
       if (session.access_token !== token) {
         await AsyncStorage.setItem("token", session.access_token);
+        await AsyncStorage.setItem("role", session.user.role as string);
       }
 
       return true;
@@ -148,16 +157,51 @@ export const useCheckSession = () => {
   return { checkSession };
 };
 
-// Tambahkan fungsi untuk memperbarui sesi secara otomatis
-export const setupSessionRefresh = () => {
-  // Berlangganan pada perubahan sesi Supabase
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === "SIGNED_IN" && session) {
-      // Simpan token baru
-      await AsyncStorage.setItem("token", session.access_token);
-    } else if (event === "SIGNED_OUT") {
-      // Hapus token
-      await AsyncStorage.removeItem("token");
-    }
+export const getAllPatients = () => {
+  const { data: patients, isLoading } = useQuery({
+    queryKey: ["patients"],
+    queryFn: async () => {
+      const { data: patients, error } = await supabase
+        .from("users")
+        .select("id,username,safezone")
+        .eq("role", "penderita");
+      if (error) throw error;
+      return patients;
+    },
+  });
+  return { patients, isLoading };
+};
+
+export const useUpdateSafeZone = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      safeZone,
+    }: {
+      userId: string;
+      safeZone: SafeZone;
+    }) => {
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          safezone: safeZone,
+        })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate dan refetch data patients
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+    onError: (error) => {
+      console.error("Error updating safe zone:", error);
+      throw error;
+    },
   });
 };

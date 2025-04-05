@@ -7,6 +7,7 @@ interface UserData {
   id: string;
   username: string;
   email: string;
+  role: string;
 }
 
 interface AuthContextType {
@@ -22,6 +23,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { checkSession } = useCheckSession();
+
+  const fetchUserData = async () => {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        throw error || new Error("User not found");
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, username, email,role")
+        .eq("email", user.email)
+        .single();
+
+      if (userError) {
+        setUserData({
+          id: user.id,
+          email: user.email || "",
+          username: user.username || "",
+          role: user.role || "",
+        });
+      } else {
+        setUserData(userData);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const initSession = async () => {
@@ -48,10 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (event === "SIGNED_IN" && session) {
           await AsyncStorage.setItem("token", session.access_token);
+          await AsyncStorage.setItem("role", session.user.role as string);
           await fetchUserData();
           setIsAuthenticated(true);
         } else if (event === "SIGNED_OUT") {
           await AsyncStorage.removeItem("token");
+          await AsyncStorage.removeItem("role");
           setUserData(null);
           setIsAuthenticated(false);
         }
@@ -64,38 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authListener.subscription.unsubscribe();
     };
   }, []);
-
-  const fetchUserData = async () => {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (error || !user) {
-        throw error || new Error("User not found");
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, username, email")
-        .eq("email", user.email)
-        .single();
-
-      if (userError) {
-        setUserData({
-          id: user.id,
-          email: user.email || "",
-          username: user.username,
-        });
-      } else {
-        setUserData(userData);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      return null;
-    }
-  };
 
   return (
     <AuthContext.Provider

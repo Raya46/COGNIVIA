@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, Tabs } from "expo-router";
 import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useAuth } from "@/context/AuthContext";
 
 const { height } = Dimensions.get("window");
 const tabBarHeight = height * 0.08;
@@ -19,6 +20,13 @@ const AddButton = ({ onPress }: { onPress: () => void }) => {
 };
 
 export default function Layout() {
+  const { userData } = useAuth();
+  const isCaregiver = userData?.role === "caregiver";
+
+  // Define colors based on role
+  const themeColor = isCaregiver ? "#8B5CF6" : "#2A9E9E";
+  const inactiveColor = isCaregiver ? "#C4B5FD" : "#B1D7D8";
+
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -48,12 +56,13 @@ export default function Layout() {
       }
     }
   };
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#2A9E9E",
-        tabBarInactiveTintColor: "#B1D7D8",
+        tabBarActiveTintColor: themeColor,
+        tabBarInactiveTintColor: inactiveColor,
         animation: "none",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
@@ -88,15 +97,14 @@ export default function Layout() {
           ),
         }}
       />
-      {/* Tombol Add di tengah */}
-      <Tabs.Screen
+      {/* Tombol Add hanya ditampilkan jika bukan caregiver */}
+      {isCaregiver ? null : (
+        <Tabs.Screen
         name="add"
         options={{
           tabBarButton: (props) => (
             <AddButton
               onPress={() => {
-                // router.push("/(untab)/posting");
-                // handleSnapPress(0);
                 pickImage();
               }}
             />
@@ -104,11 +112,11 @@ export default function Layout() {
         }}
         listeners={{
           tabPress: (e) => {
-            // Mencegah navigasi default
             e.preventDefault();
           },
         }}
       />
+      )}
       <Tabs.Screen
         name="location"
         options={{
@@ -150,7 +158,7 @@ const styles = StyleSheet.create({
     width: height * 0.07,
     height: height * 0.07,
     borderRadius: height * 0.04,
-    backgroundColor: "#2A9E9E",
+    backgroundColor: "#2A9E9E", // This will be handled by inline style now
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",

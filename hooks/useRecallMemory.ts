@@ -87,7 +87,7 @@ export const useCreateRecallMemory = () => {
           model: "gemini-1.5-flash",
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 200,
+            maxOutputTokens: 500,
           },
         });
 
