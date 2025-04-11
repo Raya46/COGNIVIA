@@ -530,7 +530,7 @@ const LocationPage = () => {
           <View
             className="absolute -top-10 p-4 w-full"
             style={{
-              backgroundColor: "rgba(255, 255, 255, 0.4)",
+              backgroundColor: "rgba(255, 255, 255, 0.6)",
               backdropFilter: "blur(5px)",
             }}
           >
