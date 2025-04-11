@@ -1,35 +1,31 @@
 import { ThemedText } from "@/components/ThemedText";
-import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useRef, useState, useEffect } from "react";
-import {
-  Image,
-  TouchableOpacity,
-  View,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-  FlatList,
-  Animated,
-  Easing,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import BottomSheet, {
-  BottomSheetScrollView,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
-import { useGetPostById } from "@/hooks/usePost";
 import { useAuth } from "@/context/AuthContext";
+import { useGetPostById } from "@/hooks/usePost";
 import {
   useCreateRecallMemory,
   useRecallMemories,
 } from "@/hooks/useRecallMemory";
+import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Speech from "expo-speech";
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from "expo-speech-recognition";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Page = () => {
   const params = useLocalSearchParams();

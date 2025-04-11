@@ -97,9 +97,33 @@ export default function Layout() {
           ),
         }}
       />
-      {/* Tombol Add hanya ditampilkan jika bukan caregiver */}
-      {isCaregiver ? null : (
+      {/* {isCaregiver ? (
         <Tabs.Screen
+          name="add"
+          options={{
+            tabBarButton: (props) => (
+              <AddButton
+                onPress={() => {
+                  pickImage();
+                }}
+              />
+            ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+            },
+          }}
+        />
+      ) : (
+        <Tabs.Screen
+          name="add"
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+      )} */}
+      <Tabs.Screen
         name="add"
         options={{
           tabBarButton: (props) => (
@@ -116,7 +140,6 @@ export default function Layout() {
           },
         }}
       />
-      )}
       <Tabs.Screen
         name="location"
         options={{

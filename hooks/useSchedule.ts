@@ -1,6 +1,7 @@
 import { supabase } from "@/supabase/supabase";
 import { Schedule } from "@/types/schedule.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 
 export const useGetSchedule = (selectedDate?: string, user_id?: string) => {
   const { data: schedules, isLoading } = useQuery({
@@ -28,13 +29,50 @@ export const useGetSchedule = (selectedDate?: string, user_id?: string) => {
   return { schedules, isLoading };
 };
 
+export const useGetRelatedUsers = (caregiverId: string) => {
+  const { data: relatedUsers, isLoading } = useQuery({
+    queryKey: ["related-users", caregiverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select(
+          `
+          id,
+          username,
+          user_caregivers!inner(caregiver_id)
+        `
+        )
+        .eq("user_caregivers.caregiver_id", caregiverId);
+
+      if (error) {
+        console.error("Error fetching related users:", error);
+        throw error;
+      }
+
+      console.log("Data from Supabase:", data);
+
+      return (
+        data?.map((user) => ({
+          id: user.id,
+          username: user.username,
+        })) || []
+      );
+    },
+    enabled: !!caregiverId,
+  });
+
+  return { relatedUsers, isLoading };
+};
+
 export const useCreateSchedule = () => {
   const queryClient = useQueryClient();
+  const { userData } = useAuth();
 
   const mutation = useMutation({
     mutationFn: async (data: Schedule) => {
       const { error } = await supabase.from("schedules").insert({
         ...data,
+        created_by: userData?.id,
         created_at: new Date().toISOString(),
       });
 

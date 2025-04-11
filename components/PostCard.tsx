@@ -1,6 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Image, View } from "react-native";
+import { Image, View, Dimensions } from "react-native";
 import { ThemedText } from "./ThemedText";
 
 export interface PostCardType {
@@ -21,62 +20,29 @@ export interface PostCardType {
   memory_word?: string;
 }
 
-const PostCard = ({
-  title,
-  name,
-  created_at,
-  image_url,
-  like,
-  comment,
-  share,
-  imageProfile,
-}: PostCardType) => {
+const PostCard = ({ title, image_url, caption }: PostCardType) => {
+  const { height } = Dimensions.get("window");
+
   return (
-    <View className="bg-white rounded-lg shadow p-4 mt-4">
-      {/* Post Header */}
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <Image
-            source={{
-              uri: imageProfile,
-            }}
-            className="w-10 h-10 rounded-full"
-          />
-          <View className="ml-3">
-            <ThemedText className="font-semibold">{name}</ThemedText>
-            <ThemedText className="text-gray-500">{created_at}</ThemedText>
-          </View>
-        </View>
-        <Ionicons name="ellipsis-horizontal" size={20} color="gray" />
-      </View>
+    <View className="relative" style={{ height: height }}>
+      {/* Background Image */}
+      <Image
+        source={{
+          uri: image_url,
+        }}
+        className="absolute w-full h-full"
+        style={{ resizeMode: "cover" }}
+      />
 
-      {/* Post Image */}
-      <View className="mt-3">
-        <Image
-          source={{
-            uri: image_url,
-          }}
-          className="w-full h-40 rounded-lg"
-        />
-      </View>
+      {/* Overlay gradient untuk memastikan teks dapat terbaca */}
+      <View className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
 
-      {/* Post Caption */}
-      <ThemedText className="mt-2 text-gray-600">{title}</ThemedText>
-
-      {/* Post Actions */}
-      <View className="flex-row justify-between mt-3">
-        <View className="flex-row items-center">
-          <Ionicons name="heart-outline" size={20} color="gray" />
-          <ThemedText className="ml-1 text-gray-500">{like}</ThemedText>
-        </View>
-        <View className="flex-row items-center">
-          <Ionicons name="chatbubble-outline" size={20} color="gray" />
-          <ThemedText className="ml-1 text-gray-500">{comment}</ThemedText>
-        </View>
-        <View className="flex-row items-center">
-          <Ionicons name="share-outline" size={20} color="gray" />
-          <ThemedText className="ml-1 text-gray-500">{share}</ThemedText>
-        </View>
+      {/* Content */}
+      <View className="absolute bottom-10 p-4">
+        <ThemedText className="text-white text-xl font-bold mb-2">
+          {title}
+        </ThemedText>
+        <ThemedText className="text-white text-base">{caption}</ThemedText>
       </View>
     </View>
   );
