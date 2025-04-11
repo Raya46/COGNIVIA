@@ -1,36 +1,69 @@
 import { supabase } from "@/supabase/supabase";
-import { SafeZone, User } from "@/types/user.type";
+import { SafeZone } from "@/types/user.type";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  role: "penderita" | "caregiver";
+  safezone?: string;
+}
+
 export const useLogin = () => {
   const mutation = useMutation({
-    mutationFn: async (data: User) => {
-      console.log("data from uselogin", data);
-      const { data: authData, error } = await supabase.auth.signInWithPassword(
-        data
-      );
-      if (error) throw error;
+    mutationFn: async (data: { email: string; password: string }) => {
+      console.log("Attempting login with:", data);
+
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        console.error("Auth error:", error);
+        throw error;
+      }
+
+      if (!authData.user) {
+        throw new Error("No user data returned");
+      }
+
+      // Cek role user di metadata
+      const role = authData.user?.user_metadata?.role || "penderita";
+      console.log("User role:", role);
+
+      // Ambil data user dari tabel yang sesuai
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", data.email)
+        .single();
+
+      if (userError) {
+        console.error("User data error:", userError);
+        throw userError;
+      }
 
       if (authData.session) {
-        await AsyncStorage.setItem(
-          "token",
-          authData.session.access_token as string
-        );
+        await AsyncStorage.setItem("token", authData.session.access_token);
+        await AsyncStorage.setItem("role", role);
       }
+
+      return { ...authData, userData };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Login successful:", data);
       router.replace("/home");
     },
-    onError: (error) => {
-      console.error("Login error:", error.message);
+    onError: (error: any) => {
+      console.error("Login error:", error);
+      throw error;
     },
   });
-  return {
-    mutate: mutation.mutate,
-    isLoading: mutation.isPending,
-  };
+  return mutation;
 };
 
 export const useLogout = () =>
@@ -40,7 +73,7 @@ export const useLogout = () =>
       await AsyncStorage.removeItem("token");
     },
     onSuccess: () => {
-      router.replace("/");
+      router.replace("/login");
     },
     onError: (error) => {
       console.error("Logout error:", error);
@@ -49,7 +82,8 @@ export const useLogout = () =>
 
 export const useRegister = () => {
   const mutation = useMutation({
-    mutationFn: async (data: User) => {
+    mutationFn: async (data: RegisterData) => {
+      // Daftar di Supabase Auth
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -70,14 +104,14 @@ export const useRegister = () => {
         throw new Error("Gagal mendaftarkan pengguna");
       }
 
-      console.log("Auth data after signup:", authData);
-
-      const { error: insertError } = await supabase.from("users").insert({
+      // Insert ke tabel yang sesuai berdasarkan role
+      const table = data.role === "caregiver" ? "caregivers" : "users";
+      const { error: insertError } = await supabase.from(table).insert({
         id: authData.user.id,
-        email: data.email,
         username: data.username,
-        password: data.password,
+        email: data.email,
         role: data.role,
+        safezone: data.safezone || null,
       });
 
       if (insertError) {
@@ -87,27 +121,20 @@ export const useRegister = () => {
       }
 
       if (authData.session) {
-        await AsyncStorage.setItem(
-          "token",
-          authData.session.access_token as string
-        );
-        await AsyncStorage.setItem(
-          "role",
-          authData.session.user.role as string
-        );
+        await AsyncStorage.setItem("token", authData.session.access_token);
+        await AsyncStorage.setItem("role", data.role);
       }
 
       return authData;
     },
     onSuccess: (data, variables) => {
-      console.log("Registration successful, navigating to home");
       router.replace({
         pathname: "/home",
         params: {
           username: variables.username,
           email: variables.email,
           userId: data.user?.id,
-          role: data.user?.role as string,
+          role: variables.role,
         },
       });
     },
@@ -163,7 +190,7 @@ export const getAllPatients = () => {
     queryFn: async () => {
       const { data: patients, error } = await supabase
         .from("users")
-        .select("id,username,safezone")
+        .select("id,userusername,safezone")
         .eq("role", "penderita");
       if (error) throw error;
       return patients;
@@ -176,7 +203,13 @@ export const useUpdateSafeZone = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, safeZone }: { userId: string; safeZone: SafeZone }) => {
+    mutationFn: async ({
+      userId,
+      safeZone,
+    }: {
+      userId: string;
+      safeZone: SafeZone;
+    }) => {
       const { data, error } = await supabase
         .from("users")
         .update({

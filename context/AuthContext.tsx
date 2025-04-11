@@ -7,7 +7,8 @@ interface UserData {
   id: string;
   username: string;
   email: string;
-  role: string;
+  role: "user" | "caregiver";
+  safezone?: string;
 }
 
 interface AuthContextType {
@@ -36,8 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, username, email,role")
+        .from(user.user_metadata.role === "caregiver" ? "caregivers" : "users")
+        .select("id, username, email, role, safezone")
         .eq("email", user.email)
         .single();
 
@@ -45,8 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserData({
           id: user.id,
           email: user.email || "",
-          username: user.username || "",
-          role: user.role || "",
+          username: user.user_metadata.username || "",
+          role: user.user_metadata.role || "user",
+          safezone: user.user_metadata.safezone || null,
         });
       } else {
         setUserData(userData);

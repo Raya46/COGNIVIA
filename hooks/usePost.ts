@@ -4,18 +4,45 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 
-export const useGetPost = () => {
+export const useGetPostByUser = (user_id: string, role?: string) => {
   const { data: posts, isLoading } = useQuery({
-    queryKey: ["posts"],
+    queryKey: ["posts", user_id, role],
     queryFn: async () => {
-      const { data: posts, error } = await supabase
+      let query = supabase
         .from("posts")
         .select(
-          `id, title, caption, image, created_at,users(
-          username
-          )`
+          `
+          id, 
+          title, 
+          caption, 
+          image, 
+          created_at,
+          user_id, 
+          users (
+            username,
+            role
+          )
+          `
         )
         .order("created_at", { ascending: false });
+
+      // Jika role adalah caregiver, ambil postingan dari users yang terhubung
+      if (role === "caregiver") {
+        const { data: connectedUsers } = await supabase
+          .from("user_caregivers")
+          .select("user_id")
+          .eq("caregiver_id", user_id);
+
+        if (connectedUsers) {
+          const userIds = connectedUsers.map((cu) => cu.user_id);
+          query = query.in("user_id", userIds);
+        }
+      } else {
+        // Jika role adalah user, hanya tampilkan postingan sendiri
+        query = query.eq("user_id", user_id);
+      }
+
+      const { data: posts, error } = await query;
 
       if (error) throw error;
 
@@ -36,48 +63,6 @@ export const useGetPost = () => {
         })
       );
 
-      console.log(postsWithImageUrls);
-      return postsWithImageUrls;
-    },
-  });
-
-  return { posts, isLoading };
-};
-
-export const useGetPostByUser = (user_id: string) => {
-  const { data: posts, isLoading } = useQuery({
-    queryKey: ["posts", user_id],
-    queryFn: async () => {
-      const { data: posts, error } = await supabase
-        .from("posts")
-        .select(
-          `id, title, caption, image, created_at,user_id, users(
-          username
-          )`
-        )
-        .eq("user_id", user_id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Dapatkan URL publik untuk setiap gambar
-      const postsWithImageUrls = await Promise.all(
-        posts.map(async (post) => {
-          if (post.image) {
-            const { data: imageUrl } = supabase.storage
-              .from("postimage")
-              .getPublicUrl(post.image);
-
-            return {
-              ...post,
-              image_url: imageUrl.publicUrl,
-            };
-          }
-          return post;
-        })
-      );
-
-      console.log(postsWithImageUrls);
       return postsWithImageUrls;
     },
   });

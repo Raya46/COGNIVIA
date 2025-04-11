@@ -1,12 +1,10 @@
 import { z } from "zod";
+
 export const userSchema = z.object({
-  username: z
-    .string()
-    .min(3, "username must be at least 3 characters long")
-    .optional(),
-  email: z.string().email("invalid email address"),
-  password: z.string().min(8, "password must be at least 8 characters long"),
-  role: z.string().default("penderita"),
+  username: z.string().min(1, "Nama harus diisi"),
+  email: z.string().email("Email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  role: z.enum(["penderita", "caregiver"]),
   safezone: z.string().optional(),
 });
 
@@ -19,7 +17,7 @@ export interface SafeZone {
 }
 
 export interface AddressType {
-  name: string;
+  username: string;
   district: string;
   city: string;
   province: string;

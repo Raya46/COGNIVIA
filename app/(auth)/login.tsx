@@ -1,46 +1,59 @@
 import CLogo from "@/assets/images/C.png";
 import TextInputCustom from "@/components/TextInputCustom";
 import { ThemedText } from "@/components/ThemedText";
-import { useRegister } from "@/hooks/useUser";
-import { User, userSchema } from "@/types/user.type";
+import { useLogin } from "@/hooks/useUser";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Image, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  TouchableOpacity,
+  View,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { z } from "zod";
 
-const RegisterScreen = () => {
-  const { mutate: register, isLoading } = useRegister();
+const loginSchema = z.object({
+  email: z.string().email("Email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
+const LoginScreen = () => {
+  const { mutate: login, isPending } = useLogin();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
-    watch,
-  } = useForm<User>({
-    resolver: zodResolver(userSchema),
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      username: "",
-      role: "penderita",
     },
   });
 
-  const onSubmit = (data: User) => {
-    console.log(data);
-    register(data, {
-      onError: (error: any) => {
-        const errorMsg =
-          error.response?.data?.message || "Invalid username or password";
-
-        setErrorMessage(errorMsg); // Set error message to be displayed
-      },
-    });
+  const onSubmit = async (data: LoginForm) => {
+    try {
+      setErrorMessage(null);
+      await login(data, {
+        onError: (error: any) => {
+          console.error("Login error in component:", error);
+          const errorMsg = error?.message || "Gagal masuk. Silakan coba lagi.";
+          setErrorMessage(errorMsg);
+          Alert.alert("Error", errorMsg);
+        },
+      });
+    } catch (error: any) {
+      console.error("Unexpected error:", error);
+      Alert.alert("Error", "Terjadi kesalahan yang tidak diharapkan");
+    }
   };
 
   return (
@@ -61,14 +74,14 @@ const RegisterScreen = () => {
       {/* Konten utama dalam container flex */}
       <View className="flex-1">
         {/* Title */}
-        <ThemedText className="text-2xl font-bold">Register</ThemedText>
+        <ThemedText className="text-2xl font-bold">Login</ThemedText>
         <ThemedText className="text-gray-500">
-          Sudah punya akun?,{" "}
+          Belum punya akun,{" "}
           <ThemedText
-            onPress={() => router.replace("/")}
+            onPress={() => router.replace("/register")}
             className="text-blue-500"
           >
-            Login Disini
+            Daftar Disini
           </ThemedText>
         </ThemedText>
 
@@ -84,75 +97,51 @@ const RegisterScreen = () => {
             Email
           </ThemedText>
           <TextInputCustom
-            placeholder="@email.com"
+            placeholder="email@example.com"
             name="email"
             control={control}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
           {errors.email && (
-            <ThemedText className="text-red-500 text-xs">
+            <ThemedText className="text-red-500 text-xs mt-1">
               {errors.email.message}
             </ThemedText>
           )}
-        </View>
-        <View className="mt-4">
-          <ThemedText className="text-gray-700 mb-2 font-bold">
-            Username
-          </ThemedText>
-          <TextInputCustom
-            placeholder="username"
-            name="username"
-            control={control}
-          />
-          {errors.username && (
-            <ThemedText className="text-red-500 text-xs">
-              {errors.username.message}
-            </ThemedText>
-          )}
-        </View>
-
-        <View className="mt-4">
-          <ThemedText className="text-gray-700 font-bold mb-2">Role</ThemedText>
-          <View className="border border-gray-300 rounded-lg">
-            <Picker
-              selectedValue={watch("role")}
-              onValueChange={(value) => setValue("role", value)}
-            >
-              <Picker.Item label="Select Role" value="" />
-              <Picker.Item label="Penderita" value="penderita" />
-              <Picker.Item label="Caregiver" value="caregiver" />
-            </Picker>
-          </View>
         </View>
 
         {/* Input Password */}
         <View className="mt-4">
           <ThemedText className="text-gray-700 mb-2 font-bold">
-            Kata Sandi
+            Password
           </ThemedText>
           <TextInputCustom
-            placeholder="password"
+            placeholder="******"
             name="password"
             control={control}
-            showable
+            secureTextEntry
+            autoCapitalize="none"
           />
           {errors.password && (
-            <ThemedText className="text-red-500 text-xs">
+            <ThemedText className="text-red-500 text-xs mt-1">
               {errors.password.message}
             </ThemedText>
           )}
         </View>
 
+        {/* Tombol Login */}
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
-          className="mt-6 bg-teal-500 p-3 rounded-lg items-center"
+          disabled={isPending}
+          className={`mt-6 bg-teal-500 p-3 rounded-lg items-center ${
+            isPending ? "opacity-50" : ""
+          }`}
         >
-          {isLoading ? (
-            <ThemedText className="text-white text-lg font-semibold">
-              Loading...
-            </ThemedText>
+          {isPending ? (
+            <ActivityIndicator color="white" />
           ) : (
             <ThemedText className="text-white text-lg font-semibold">
-              Register
+              Login
             </ThemedText>
           )}
         </TouchableOpacity>
@@ -161,7 +150,7 @@ const RegisterScreen = () => {
       {/* Footer dengan posisi di bawah */}
       <View className="mb-6">
         <ThemedText className="text-center text-gray-500">
-          Dengan Register, Anda Menyetujui{" "}
+          Dengan Login, Anda Menyetujui{" "}
           <ThemedText className="text-blue-500">Kebijakan Privasi</ThemedText>{" "}
           dan{" "}
           <ThemedText className="text-blue-500">Syarat & Ketentuan</ThemedText>.
@@ -171,4 +160,4 @@ const RegisterScreen = () => {
   );
 };
 
-export default RegisterScreen;
+export default LoginScreen;

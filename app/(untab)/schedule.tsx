@@ -1,7 +1,11 @@
 import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
 import TextInputCustom from "@/components/TextInputCustom";
 import { ThemedText } from "@/components/ThemedText";
-import { useCreateSchedule, useGetSchedule } from "@/hooks/useSchedule";
+import {
+  useCreateSchedule,
+  useGetSchedule,
+  useGetRelatedUsers,
+} from "@/hooks/useSchedule";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { router } from "expo-router";
@@ -28,6 +32,16 @@ import { format } from "date-fns";
 
 const ScheduleScreen = () => {
   const { userData } = useAuth();
+  const isCaregiver = userData?.role === "caregiver";
+
+  const { relatedUsers, isLoading: loadingUsers } = useGetRelatedUsers(
+    isCaregiver ? userData?.id : ""
+  );
+
+  const [selectedUserId, setSelectedUserId] = useState<string>(
+    isCaregiver ? "" : (userData?.id as string)
+  );
+
   const [selectedDate, setSelectedDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
@@ -47,11 +61,11 @@ const ScheduleScreen = () => {
       time: "",
       type: "kegiatan",
       date: selectedDate,
-      user_id: userData?.id,
+      user_id: selectedUserId,
     },
   });
 
-  const { schedules, isLoading } = useGetSchedule(selectedDate, userData?.id);
+  const { schedules, isLoading } = useGetSchedule(selectedDate, selectedUserId);
   const { mutate: createSchedule, isLoading: isCreating } = useCreateSchedule();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(new Date());
@@ -83,7 +97,7 @@ const ScheduleScreen = () => {
     try {
       await createSchedule({
         ...data,
-        user_id: userData?.id,
+        user_id: selectedUserId,
       });
       sheetRef.current?.close();
       reset();
@@ -118,7 +132,7 @@ const ScheduleScreen = () => {
               markedDates={{
                 [selectedDate]: { selected: true, selectedColor: "#14B8A6" },
               }}
-              onDayPress={(day) => {
+              onDayPress={(day: any) => {
                 setSelectedDate(day.dateString);
                 setValue("date", day.dateString);
               }}
@@ -185,6 +199,37 @@ const ScheduleScreen = () => {
               <ThemedText className="text-center text-lg font-bold mb-4">
                 Buat Jadwal Baru
               </ThemedText>
+
+              {isCaregiver && (
+                <View className="mb-4">
+                  <ThemedText className="font-bold mb-2">
+                    Pilih Penderita
+                  </ThemedText>
+                  <View className="border border-gray-300 rounded-lg">
+                    <Picker
+                      selectedValue={watch("user_id")}
+                      onValueChange={(value) => {
+                        setValue("user_id", value);
+                        setSelectedUserId(value);
+                      }}
+                    >
+                      <Picker.Item label="Pilih Penderita" value="" />
+                      {relatedUsers?.map((user) => (
+                        <Picker.Item
+                          key={user.id}
+                          label={user.username}
+                          value={user.id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                  {errors.user_id && (
+                    <ThemedText className="text-red-500 text-sm mt-1">
+                      {errors.user_id.message}
+                    </ThemedText>
+                  )}
+                </View>
+              )}
 
               <View className="mb-4">
                 <ThemedText className="font-bold mb-2">Tipe Jadwal</ThemedText>
@@ -258,8 +303,10 @@ const ScheduleScreen = () => {
 
               <TouchableOpacity
                 onPress={handleSubmit(onSubmit)}
-                disabled={isCreating}
-                className="bg-teal-500 p-4 rounded-lg mt-4"
+                disabled={isCreating || (isCaregiver && !watch("user_id"))}
+                className={`bg-teal-500 p-4 rounded-lg mt-4 ${
+                  isCaregiver && !watch("user_id") ? "opacity-50" : ""
+                }`}
               >
                 {isCreating ? (
                   <ActivityIndicator color="white" />

@@ -16,13 +16,18 @@ import { PostCardType } from "@/components/PostCard";
 import { useGetSchedule } from "@/hooks/useSchedule";
 import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
 import { useAuth } from "@/context/AuthContext";
+import { useLogout } from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
-  const { posts, isLoading } = useGetPostByUser(userData?.id as string);
+  const { mutate: logout } = useLogout();
+  const { posts, isLoading } = useGetPostByUser(
+    userData?.id as string,
+    userData?.role
+  );
   const { schedules, isLoading: scheduleLoading } = useGetSchedule(
     undefined,
-    userData?.id
+    userData?.id as string
   );
   const renderSchedule = ({ item }: { item: ScheduleCardProps }) => {
     return (
@@ -71,8 +76,8 @@ const Page = () => {
       <ScrollView>
         <View className="flex-row items-center justify-between px-5 pt-2">
           <ThemedText className="text-2xl font-bold">Profile</ThemedText>
-          <TouchableOpacity onPress={() => {}}>
-            <Ionicons name="notifications-outline" size={24} color="#008B8B" />
+          <TouchableOpacity onPress={() => logout()}>
+            <Ionicons name="log-out-outline" size={24} color="#008B8B" />
           </TouchableOpacity>
         </View>
 
