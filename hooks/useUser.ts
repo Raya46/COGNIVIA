@@ -106,13 +106,22 @@ export const useRegister = () => {
       }
 
       // Insert ke tabel yang sesuai berdasarkan role
-      const table = data.role === "caregiver" ? "caregivers" : "users";
-      const { error: insertError } = await supabase.from(table).insert({
+      if (data.role == "caregiver") {
+        await supabase.from("caregivers").insert({
+          id: authData.user.id,
+          username: data.username,
+          email: data.email,
+          role: data.role,
+          quiz_cg_value: 0,
+          password: data.password,
+        });
+      }
+      const { error: insertError } = await supabase.from("users").insert({
         id: authData.user.id,
         username: data.username,
         email: data.email,
         role: data.role,
-        quiz_cg_value: 0,
+        password: data.password,
       });
 
       if (insertError) {
@@ -129,15 +138,19 @@ export const useRegister = () => {
       return authData;
     },
     onSuccess: (data, variables) => {
-      router.replace({
-        pathname: "/home",
-        params: {
-          username: variables.username,
-          email: variables.email,
-          userId: data.user?.id,
-          role: variables.role,
-        },
-      });
+      if (variables.role == "caregiver") {
+        router.replace("/quiz");
+      } else {
+        router.replace({
+          pathname: "/home",
+          params: {
+            username: variables.username,
+            email: variables.email,
+            userId: data.user?.id,
+            role: variables.role,
+          },
+        });
+      }
     },
     onError: (error) => {
       console.error("Register error:", error);
@@ -191,7 +204,7 @@ export const getAllPatients = () => {
     queryFn: async () => {
       const { data: patients, error } = await supabase
         .from("users")
-        .select("id,userusername,safezone")
+        .select("id,username,safezone")
         .eq("role", "penderita");
       if (error) throw error;
       return patients;

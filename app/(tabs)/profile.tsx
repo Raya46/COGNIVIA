@@ -1,22 +1,19 @@
+import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
 import { ThemedText } from "@/components/ThemedText";
+import { useAuth } from "@/context/AuthContext";
+import { useGetSchedule } from "@/hooks/useSchedule";
+import { useLogout } from "@/hooks/useUser";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
-  ScrollView,
-  View,
-  Image,
-  FlatList,
   ActivityIndicator,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useGetPostByUser } from "@/hooks/usePost";
-import { router } from "expo-router";
-import { PostCardType } from "@/components/PostCard";
-import { useGetSchedule } from "@/hooks/useSchedule";
-import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
-import { useAuth } from "@/context/AuthContext";
-import { useLogout } from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
@@ -101,15 +98,15 @@ const Page = () => {
 
           <TouchableOpacity
             onPress={() => logout()}
-            className="flex flex-row items-center gap-3 p-3 border border-gray-200 rounded-lg mt-6"
+            className="flex flex-row items-center gap-3 p-3 border border-gray-200 rounded-lg my-4"
           >
             <Ionicons name="log-out-outline" size={24} color={"red"} />
             <ThemedText className="text-red-500">Logout</ThemedText>
           </TouchableOpacity>
 
-          {isCaregiver ? (
-            <View className="flex flex-row items-center justify-between mt-4">
-              <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
+          <View className="flex flex-row items-center justify-between mb-3">
+            <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
+            {isCaregiver ? (
               <TouchableOpacity>
                 <ThemedText
                   onPress={() => router.push("/schedule")}
@@ -118,8 +115,8 @@ const Page = () => {
                   Detail
                 </ThemedText>
               </TouchableOpacity>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
 
           <FlatList
             data={schedules}
