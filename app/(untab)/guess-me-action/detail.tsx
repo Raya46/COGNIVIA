@@ -63,23 +63,23 @@ const GuessMeDetail = () => {
     <SafeAreaView className="flex-1 bg-white p-4">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="flex-row items-center mb-4">
+        <View className="flex-row items-center justify-between mb-4">
           <Ionicons
             name="arrow-back"
             size={24}
             color="black"
             onPress={() => router.back()}
           />
-          <ThemedText className="text-lg font-semibold ml-2">
+          <ThemedText className="text-lg font-semibold">
             Guess Me
           </ThemedText>
           <Ionicons
             name="help-circle-outline"
             size={24}
             color="black"
-            className="ml-auto"
           />
         </View>
+
 
         {isLoading ? (
           <ActivityIndicator size="large" color="#2A9E9E" className="my-8" />
@@ -93,7 +93,7 @@ const GuessMeDetail = () => {
             />
 
             {/* Detail Informasi */}
-            <View className="bg-white p-4 rounded-xl shadow-lg mt-6">
+            <View className="bg-white p-4 rounded-xl border border-gray-200 mt-6">
               <ThemedText className="text-lg font-semibold mb-3">
                 Pertanyaan
               </ThemedText>
@@ -131,16 +131,16 @@ const GuessMeDetail = () => {
 
             {/* Action Buttons */}
             <TouchableOpacity
-              className="bg-teal-500 p-3 rounded-lg mt-6"
+              className="bg-teal-500 p-5 rounded-full mt-44"
               onPress={handleStartQuiz}
             >
               <ThemedText className="text-white text-center font-semibold">
-                Mulai Kuis Guess Me
+                Mulai Kuis
               </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="border border-teal-500 p-3 rounded-lg mt-2 mb-4"
+              className="border border-teal-500 p-5 rounded-full mt-2 mb-4"
               onPress={() => router.back()}
             >
               <ThemedText className="text-teal-500 text-center font-semibold">
