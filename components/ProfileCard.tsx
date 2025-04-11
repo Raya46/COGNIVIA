@@ -1,6 +1,7 @@
 import React from "react";
 import { Image, TouchableOpacity, View } from "react-native";
 import { ThemedText } from "./ThemedText";
+import { Ionicons } from "@expo/vector-icons";
 
 interface ProfileCardProps {
   image_url: string;
@@ -22,26 +23,38 @@ const ProfileCard = ({
         className="w-full h-40 rounded-lg"
         resizeMode="cover"
       />
-      <ThemedText className="text-lg font-semibold text-center mt-2">
-        {title}
-      </ThemedText>
-      <ThemedText className="text-gray-500 text-center">
-        {questionsLength} Pertanyaan
-      </ThemedText>
+      
+      <View className="flex-row justify-between items-center mt-2">
+        <View className="w-full">
+          <ThemedText className="text-sm text-gray-600 mb-1 text-center">
+            Yuk, tebak siapa di foto ini!
+          </ThemedText>
+          <ThemedText className="text-xl font-bold text-black text-center">
+            Apakah kamu masih ingat namanya?
+          </ThemedText>
+        </View>
+      </View>
 
       {/* Edit & Delete Buttons */}
       {type === "kuis" ? null : (
-        <View className="flex-row justify-between mt-4">
-          <TouchableOpacity className="bg-teal-500 p-2 px-4 rounded-lg">
-            <ThemedText className="text-white font-semibold">
-              Edit Data
+        <View className="flex-row justify-between items-center w-full mt-4">
+          <View>
+            <ThemedText className="text-lg font-semibold">
+              {title}
             </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity className="bg-red-500 p-2 px-4 rounded-lg">
-            <ThemedText className="text-white font-semibold">
-              Hapus Data
+            <ThemedText className="text-gray-500">
+              {questionsLength} Pertanyaan
             </ThemedText>
-          </TouchableOpacity>
+          </View>
+                  
+          <View className="flex-row gap-2">
+            <TouchableOpacity className="border-2 border-gray-500 p-2 px-4 rounded-lg">
+              <Ionicons name="pencil" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity className="border-2 border-red-500 p-2 px-4 rounded-lg">
+              <Ionicons name="trash" size={20} color="red" />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>

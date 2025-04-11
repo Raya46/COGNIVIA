@@ -20,9 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
-import TextRecognition, {
-  TextRecognitionScript,
-} from "@react-native-ml-kit/text-recognition";
+import TextRecognition from "@react-native-ml-kit/text-recognition";
 
 const Kuis = () => {
   const params = useLocalSearchParams();
@@ -35,6 +33,20 @@ const Kuis = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<Answer>({
+    resolver: zodResolver(answerSchema),
+    defaultValues: {
+      answer: "",
+      user_id: userData?.id || "",
+    },
+  });
 
   // Parse questions data from params
   useEffect(() => {
@@ -51,23 +63,9 @@ const Kuis = () => {
     }
   }, [params.questions_data]);
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<Answer>({
-    resolver: zodResolver(answerSchema),
-    defaultValues: {
-      answer: "",
-      user_id: userData?.id || "",
-    },
-  });
-
   const currentQuestion = questions[currentQuestionIndex];
 
-  // Pastikan untuk mengupdate state userAnswer ketika imageText berubah
+  // Update userAnswer when imageText changes
   useEffect(() => {
     if (imageText && imageText.trim() !== "") {
       setValue("answer", imageText);
@@ -76,7 +74,6 @@ const Kuis = () => {
   }, [imageText, setValue]);
 
   const handleAnswerQuestion = (data: Answer) => {
-    console.log("Handling answer submission:", data);
     if (!currentQuestion || !userData?.id) {
       console.log("Missing current question or user data");
       return;
@@ -92,29 +89,14 @@ const Kuis = () => {
       return;
     }
 
-    // Tentukan jawaban mana yang akan digunakan
-    const finalAnswer =
-      imageText && imageText.trim() !== "" ? imageText : data.answer;
-
-    // Update local state
+    const finalAnswer = imageText.trim() || data.answer.trim();
     setUserAnswer(finalAnswer);
     setIsAnswered(true);
 
-    // Check answer
     const isAnswerCorrect =
       finalAnswer.toLowerCase() === correctAnswer.answer.toLowerCase();
-
     setIsCorrect(isAnswerCorrect);
-    console.log("Answer is correct:", isAnswerCorrect);
 
-    // Log untuk debugging
-    console.log("Submitting guess:", {
-      answer_id: correctAnswer.id,
-      user_id: userData.id,
-      user_input: finalAnswer,
-    });
-
-    // Submit to database
     submitGuess(
       {
         answer_id: correctAnswer.id,
@@ -122,8 +104,8 @@ const Kuis = () => {
         user_input: finalAnswer,
       },
       {
-        onSuccess: (data) => {
-          console.log("Answer submitted successfully:", data);
+        onSuccess: () => {
+          console.log("Answer submitted successfully");
         },
         onError: (error: any) => {
           console.error("Error submitting answer:", error);
@@ -133,7 +115,6 @@ const Kuis = () => {
     );
   };
 
-  // Saat reset form atau pindah ke pertanyaan lain, pastikan juga reset imageText dan imageUri
   const resetAllInputs = () => {
     reset({ answer: "", user_id: userData?.id });
     setIsAnswered(false);
@@ -143,27 +124,20 @@ const Kuis = () => {
     setImageUri("");
   };
 
-  // Handler untuk pindah ke pertanyaan berikutnya - dengan reset yang telah dimodifikasi
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       resetAllInputs();
     } else {
-      // Quiz selesai
-      Alert.alert(
-        "Quiz Selesai",
-        "Anda telah menyelesaikan semua pertanyaan!",
-        [
-          {
-            text: "Kembali ke Detail",
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      Alert.alert("Quiz Selesai", "Anda telah menyelesaikan semua pertanyaan!", [
+        {
+          text: "Kembali ke Detail",
+          onPress: () => router.back(),
+        },
+      ]);
     }
   };
 
-  // Handler untuk kembali ke pertanyaan sebelumnya - dengan reset yang telah dimodifikasi
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
@@ -179,11 +153,9 @@ const Kuis = () => {
       });
 
       if (!res.canceled && res.assets && res.assets[0]) {
-        console.log(res.assets[0].uri);
         const selectedImageUri = res.assets[0].uri;
         const fileName = selectedImageUri.split("/").pop();
-        const newPath = ((FileSystem.documentDirectory as string) +
-          fileName) as string;
+        const newPath = `${FileSystem.documentDirectory}${fileName}`;
 
         await FileSystem.copyAsync({
           from: selectedImageUri,
@@ -195,6 +167,7 @@ const Kuis = () => {
       }
     } catch (error) {
       console.error(error);
+      Alert.alert("Error", "Gagal mengambil foto");
     }
   };
 
@@ -202,29 +175,24 @@ const Kuis = () => {
     <SafeAreaView className="flex-1 bg-white p-4">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="flex-row items-center mb-4">
+        <View className="flex-row items-center justify-between mb-4">
           <Ionicons
             name="arrow-back"
             size={24}
             color="black"
             onPress={() => router.back()}
           />
-          <ThemedText className="text-lg font-semibold ml-2">
+          <ThemedText className="text-lg font-semibold flex-1 text-center">
             Quiz Guess Me ({currentQuestionIndex + 1}/{questions.length})
           </ThemedText>
-          <Ionicons
-            name="help-circle-outline"
-            size={24}
-            color="black"
-            className="ml-auto"
-          />
+          <Ionicons name="help-circle-outline" size={24} color="black" />
         </View>
 
         {questions.length === 0 ? (
           <ActivityIndicator size="large" color="#2A9E9E" className="my-8" />
         ) : (
           <>
-            {/* Result Banner - shown only when answered */}
+            {/* Result Banner */}
             {isAnswered && (
               <View
                 className={`p-3 rounded-lg mb-4 ${
@@ -238,37 +206,33 @@ const Kuis = () => {
                 >
                   {isCorrect ? "Benar!" : "Jawaban salah!"}
                 </ThemedText>
-                {!isCorrect &&
-                  currentQuestion.answers &&
-                  currentQuestion.answers.length > 0 && (
-                    <ThemedText className="text-center text-gray-700 mt-1">
-                      Jawaban yang benar: {currentQuestion.answers[0].answer}
-                    </ThemedText>
-                  )}
+                {!isCorrect && currentQuestion.answers?.[0] && (
+                  <ThemedText className="text-center text-gray-700 mt-1">
+                    Jawaban yang benar: {currentQuestion.answers[0].answer}
+                  </ThemedText>
+                )}
               </View>
             )}
 
-            {/* Profile Card with Question */}
+            {/* Profile Card */}
             <ProfileCard
               image_url={params.image_url as string}
-              title={currentQuestion?.question || "Tidak ada pertanyaan"}
+              title="Yuk, tebak siapa di foto ini!"
               type="kuis"
             />
 
-            {/* Input Answer */}
+            {/* Input Section */}
             <View className="bg-white p-4 rounded-xl shadow-lg mt-6">
               {imageText ? (
                 <View>
                   <ThemedText className="text-lg font-bold mb-3 text-center">
                     Jawaban dari Foto
                   </ThemedText>
-
                   <View className="bg-gray-100 p-3 rounded-lg">
                     <ThemedText className="text-center text-lg">
                       {imageText}
                     </ThemedText>
                   </View>
-
                   {!isAnswered && (
                     <TouchableOpacity
                       onPress={() => {
@@ -297,12 +261,13 @@ const Kuis = () => {
                       setValue("answer", text);
                       setUserAnswer(text);
                     }}
-                    editable={!isAnswered} // Disable input once answered
+                    editable={!isAnswered}
+                    className="rounded-full text-center"
                   />
                 </View>
               )}
 
-              {imageUri ? (
+              {imageUri && (
                 <View className="mt-4 mb-2">
                   <Image
                     source={{ uri: imageUri }}
@@ -310,9 +275,9 @@ const Kuis = () => {
                     resizeMode="contain"
                   />
                 </View>
-              ) : null}
+              )}
 
-              {!imageText ? (
+              {!imageText && (
                 <View>
                   <ThemedText className="text-center mt-2">Atau</ThemedText>
                   <ThemedText className="text-center font-bold text-lg my-2">
@@ -322,99 +287,100 @@ const Kuis = () => {
                     Silahkan masukkan foto jawaban tulis tangan anda
                   </ThemedText>
                 </View>
-              ) : null}
+              )}
 
-              {/* Tombol kamera dan galeri hanya ditampilkan jika belum ada OCR atau belum jawab */}
+              {/* Camera Button */}
               {!isAnswered && !imageText && (
-                <View className="flex flex-row items-center justify-center gap-3 my-4">
+                <View className="my-4">
                   <TouchableOpacity
                     onPress={openCamera}
-                    className="p-4 rounded-lg flex-auto items-center bg-teal-500"
+                    className="border-2 border-dashed border-gray-400 rounded-xl p-6 items-center"
                   >
-                    <Ionicons name="camera-outline" size={24} color="white" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => console.log("pick image")}
-                    className="p-4 rounded-lg flex-auto items-center bg-teal-500"
-                  >
-                    <Ionicons name="image-outline" size={24} color="white" />
+                    <View className="items-center">
+                      <ThemedText className="text-center font-bold text-lg mb-2">
+                        Ambil Foto
+                      </ThemedText>
+                      <ThemedText className="text-center text-gray-500 mb-4">
+                        Silahkan foto jawaban tulisan tangan anda
+                      </ThemedText>
+                      {imageUri ? (
+                        <Image
+                          source={{ uri: imageUri }}
+                          className="w-32 h-32 rounded-lg"
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Ionicons name="camera" size={48} color="#9CA3AF" />
+                      )}
+                    </View>
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
 
-            {/* Action Buttons */}
-            {!isAnswered ? (
-              <TouchableOpacity
-                className="bg-teal-500 p-3 rounded-lg mt-6"
-                onPress={() => {
-                  // Cek apakah ada jawaban yang valid
-                  if (
-                    (!userAnswer || userAnswer.trim() === "") &&
-                    (!imageText || imageText.trim() === "")
-                  ) {
-                    Alert.alert(
-                      "Peringatan",
-                      "Silahkan masukkan jawaban terlebih dahulu"
-                    );
-                    return;
-                  }
-
-                  console.log("Submit button pressed");
-                  handleSubmit((data) => {
-                    console.log("Form submitted:", data);
-                    handleAnswerQuestion(data);
-                  })();
-                }}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <ThemedText className="text-white text-center font-semibold">
-                    Jawab Pertanyaan
-                  </ThemedText>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                className="bg-teal-500 p-3 rounded-lg mt-6"
-                onPress={handleNextQuestion}
-              >
-                <ThemedText className="text-white text-center font-semibold">
-                  {currentQuestionIndex < questions.length - 1
-                    ? "Pertanyaan Selanjutnya"
-                    : "Selesai"}
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-
-            {/* Navigation Buttons */}
-            <View className="flex-row justify-between mt-3 mb-6">
-              <TouchableOpacity
-                className="border border-teal-500 p-3 rounded-lg flex-1 mr-2"
-                onPress={handlePreviousQuestion}
-                disabled={currentQuestionIndex === 0}
-              >
-                <ThemedText
-                  className={`text-center font-semibold ${
-                    currentQuestionIndex === 0
-                      ? "text-gray-400"
-                      : "text-teal-500"
-                  }`}
+              {/* Action Buttons */}
+              {!isAnswered ? (
+                <TouchableOpacity
+                  className="bg-teal-500 p-3 rounded-lg mt-6"
+                  onPress={() => {
+                    if (!userAnswer.trim() && !imageText.trim()) {
+                      Alert.alert(
+                        "Peringatan",
+                        "Silahkan masukkan jawaban terlebih dahulu"
+                      );
+                      return;
+                    }
+                    handleSubmit(handleAnswerQuestion)();
+                  }}
+                  disabled={isSubmitting}
                 >
-                  Pertanyaan Sebelumnya
-                </ThemedText>
-              </TouchableOpacity>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <ThemedText className="text-white text-center font-semibold">
+                      Jawab Pertanyaan
+                    </ThemedText>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  className="bg-teal-500 p-3 rounded-lg mt-6"
+                  onPress={handleNextQuestion}
+                >
+                  <ThemedText className="text-white text-center font-semibold">
+                    {currentQuestionIndex < questions.length - 1
+                      ? "Pertanyaan Selanjutnya"
+                      : "Selesai"}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity
-                className="border border-teal-500 p-3 rounded-lg flex-1 ml-2 items-center"
-                onPress={() => router.back()}
-              >
-                <ThemedText className="text-teal-500 text-center font-semibold">
-                  Kembali ke Detail
-                </ThemedText>
-              </TouchableOpacity>
+              {/* Navigation Buttons */}
+              <View className="flex-row justify-between mt-3 mb-6">
+                <TouchableOpacity
+                  className="border border-teal-500 p-3 rounded-lg flex-1 mr-2"
+                  onPress={handlePreviousQuestion}
+                  disabled={currentQuestionIndex === 0}
+                >
+                  <ThemedText
+                    className={`text-center font-semibold ${
+                      currentQuestionIndex === 0
+                        ? "text-gray-400"
+                        : "text-teal-500"
+                    }`}
+                  >
+                    Pertanyaan Sebelumnya
+                  </ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="border border-teal-500 p-3 rounded-lg flex-1 ml-2"
+                  onPress={() => router.back()}
+                >
+                  <ThemedText className="text-teal-500 text-center font-semibold">
+                    Kembali ke Detail
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
             </View>
           </>
         )}

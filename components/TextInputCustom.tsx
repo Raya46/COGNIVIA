@@ -35,10 +35,10 @@ const TextInputCustom = ({
 
   return (
     <View
-      className={`${padding} my-2 rounded-lg border border-gray-300 flex flex-row justify-between items-center p-2 py-3 pr-4`}
+      className={`${padding} my-2 rounded-lg border border-gray-300 flex flex-row gap-4 items-center p-2 py-3 pr-4`}
     >
       {leftIcon && (
-        <Ionicons name={leftIcon} size={24} color="gray" className="ml-2" />
+        <Ionicons name={leftIcon} size={24} color="gray" className="ml-2 " />
       )}
       <Controller
         control={control}
