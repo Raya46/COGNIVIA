@@ -176,17 +176,11 @@ export const useUpdateSafeZone = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      userId,
-      safeZone,
-    }: {
-      userId: string;
-      safeZone: SafeZone;
-    }) => {
+    mutationFn: async ({ userId, safeZone }: { userId: string; safeZone: SafeZone }) => {
       const { data, error } = await supabase
         .from("users")
         .update({
-          safezone: safeZone,
+          safezone: JSON.stringify(safeZone), // Convert ke string sebelum simpan ke DB
         })
         .eq("id", userId)
         .select()
@@ -196,7 +190,6 @@ export const useUpdateSafeZone = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate dan refetch data patients
       queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
     onError: (error) => {
