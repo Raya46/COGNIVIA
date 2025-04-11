@@ -315,37 +315,59 @@ const LocationPage = () => {
     setSelectedPatient(patient || null);
 
     if (patient?.safezone) {
-      let safezoneData: SafeZone;
       try {
-        safezoneData =
-          typeof patient.safezone === "string"
-            ? JSON.parse(patient.safezone)
-            : patient.safezone;
+        let safezoneData: SafeZone;
+        if (typeof patient.safezone === "string") {
+          safezoneData = JSON.parse(patient.safezone);
+        } else {
+          safezoneData = patient.safezone;
+        }
 
-        const region = {
-          latitude: safezoneData.latitude,
-          longitude: safezoneData.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        mapRef.current?.animateToRegion(region, 1000);
+        if (
+          safezoneData &&
+          typeof safezoneData.latitude === "number" &&
+          typeof safezoneData.longitude === "number" &&
+          typeof safezoneData.radius === "number"
+        ) {
+          const region = {
+            latitude: safezoneData.latitude,
+            longitude: safezoneData.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          };
 
-        setNewSafeZone({
-          latitude: safezoneData.latitude,
-          longitude: safezoneData.longitude,
-          radius: safezoneData.radius,
-        });
+          setNewSafeZone({
+            latitude: safezoneData.latitude,
+            longitude: safezoneData.longitude,
+            radius: safezoneData.radius,
+          });
 
-        const address = await getAddressFromCoordinates(
-          safezoneData.latitude,
-          safezoneData.longitude
-        );
-        if (address) {
-          setSelectedLocationAddress(address);
+          mapRef.current?.animateToRegion(region, 1000);
+
+          const address = await getAddressFromCoordinates(
+            safezoneData.latitude,
+            safezoneData.longitude
+          );
+          if (address) {
+            setSelectedLocationAddress(address);
+          }
         }
       } catch (error) {
         console.error("Error parsing safezone data:", error);
+        Alert.alert("Error", "Gagal memuat data zona aman");
       }
+    } else {
+      setNewSafeZone({
+        latitude: 0,
+        longitude: 0,
+        radius: 500,
+      });
+      setSelectedLocationAddress({
+        name: "",
+        district: "",
+        city: "",
+        province: "",
+      });
     }
   };
 
@@ -370,55 +392,72 @@ const LocationPage = () => {
               initialRegion={initialRegion ?? undefined}
               onLongPress={handleMapLongPress}
             >
-              {/* Default Safe Zone Circle */}
-              {SAFE_ZONE && (
-                <Circle
-                  center={{
-                    latitude: SAFE_ZONE.latitude,
-                    longitude: SAFE_ZONE.longitude,
-                  }}
-                  radius={SAFE_ZONE.radius}
-                  strokeColor="rgba(0, 150, 136, 0.5)"
-                  fillColor="rgba(0, 150, 136, 0.2)"
-                />
-              )}
-
-              {/* Selected Location Marker */}
-              {isEditingZone && selectedLocation && (
+              {/* Marker posisi pengguna saat ini (baik caregiver maupun penderita) */}
+              {location?.coords && (
                 <Marker
-                  coordinate={selectedLocation}
-                  title="New Safe Zone"
-                  description="Long press to change location"
-                  pinColor="yellow"
+                  coordinate={{
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                  }}
+                  title="Lokasi Anda"
+                  description="Posisi Anda saat ini"
                 >
-                  <View className="bg-yellow-500 p-2 rounded-full">
-                    <Ionicons name="location" size={16} color="white" />
+                  <View className="bg-blue-500 p-2 rounded-full">
+                    <Ionicons name="person" size={16} color="white" />
                   </View>
                 </Marker>
               )}
 
-              {/* Selected Patient's Safe Zone */}
-              {selectedPatient?.safezone &&
+              {/* Safe Zone untuk penderita */}
+              {!isCaregiver && SAFE_ZONE && (
+                <>
+                  <Circle
+                    center={{
+                      latitude: SAFE_ZONE.latitude,
+                      longitude: SAFE_ZONE.longitude,
+                    }}
+                    radius={SAFE_ZONE.radius}
+                    strokeColor="rgba(0, 150, 136, 0.5)"
+                    fillColor="rgba(0, 150, 136, 0.2)"
+                  />
+                  <Marker
+                    coordinate={{
+                      latitude: SAFE_ZONE.latitude,
+                      longitude: SAFE_ZONE.longitude,
+                    }}
+                    title="Zona Aman"
+                    description="Pusat zona aman"
+                  >
+                    <View className="bg-teal-500 p-2 rounded-full">
+                      <Ionicons name="home" size={16} color="white" />
+                    </View>
+                  </Marker>
+                </>
+              )}
+
+              {/* Safe Zone untuk pasien yang dipilih (caregiver) */}
+              {isCaregiver &&
+                selectedPatient?.safezone &&
                 selectedPatient.safezone.latitude &&
-                selectedPatient.safezone.longitude && (
+                selectedPatient.safezone.longitude &&
+                selectedPatient.safezone.radius && (
                   <>
                     <Circle
                       center={{
-                        latitude: selectedPatient.safezone.latitude,
-                        longitude: selectedPatient.safezone.longitude,
+                        latitude: Number(selectedPatient.safezone.latitude),
+                        longitude: Number(selectedPatient.safezone.longitude),
                       }}
-                      radius={selectedPatient.safezone.radius}
+                      radius={Number(selectedPatient.safezone.radius)}
                       strokeColor="rgba(255, 165, 0, 0.5)"
                       fillColor="rgba(255, 165, 0, 0.2)"
                     />
                     <Marker
                       coordinate={{
-                        latitude: selectedPatient.safezone.latitude,
-                        longitude: selectedPatient.safezone.longitude,
+                        latitude: Number(selectedPatient.safezone.latitude),
+                        longitude: Number(selectedPatient.safezone.longitude),
                       }}
                       title={`${selectedPatient.username}'s Safe Zone`}
                       description="Current safe zone center"
-                      pinColor="orange"
                     >
                       <View className="bg-orange-500 p-2 rounded-full">
                         <Ionicons name="home" size={16} color="white" />
@@ -426,6 +465,19 @@ const LocationPage = () => {
                     </Marker>
                   </>
                 )}
+
+              {/* Marker untuk lokasi yang sedang diedit */}
+              {isCaregiver && isEditingZone && selectedLocation && (
+                <Marker
+                  coordinate={selectedLocation}
+                  title="New Safe Zone"
+                  description="Long press to change location"
+                >
+                  <View className="bg-yellow-500 p-2 rounded-full">
+                    <Ionicons name="location" size={16} color="white" />
+                  </View>
+                </Marker>
+              )}
             </MapView>
           ) : (
             <View
