@@ -1,28 +1,24 @@
+import { ThemedText } from "@/components/ThemedText";
+import { useAuth } from "@/context/AuthContext";
+import { getAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
+import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import * as Location from "expo-location";
 import React, {
-  useState,
-  useEffect,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import {
-  View,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
   TextInput,
-  Button,
-  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import MapView, { Marker, Circle } from "react-native-maps";
-import { Ionicons } from "@expo/vector-icons";
-import { ThemedText } from "@/components/ThemedText";
-import * as Location from "expo-location";
-import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/supabase/supabase";
-import { Picker } from "@react-native-picker/picker";
-import { getAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
+import MapView, { Circle, Marker } from "react-native-maps";
 
 interface AddressType {
   name: string;
@@ -319,72 +315,65 @@ const LocationPage = () => {
     setSelectedPatient(patient || null);
 
     if (patient?.safezone) {
-      let safezoneData: SafeZone;
       try {
-        safezoneData =
-          typeof patient.safezone === "string"
-            ? JSON.parse(patient.safezone)
-            : patient.safezone;
+        let safezoneData: SafeZone;
+        if (typeof patient.safezone === "string") {
+          safezoneData = JSON.parse(patient.safezone);
+        } else {
+          safezoneData = patient.safezone;
+        }
 
-        const region = {
-          latitude: safezoneData.latitude,
-          longitude: safezoneData.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        mapRef.current?.animateToRegion(region, 1000);
+        if (
+          safezoneData &&
+          typeof safezoneData.latitude === "number" &&
+          typeof safezoneData.longitude === "number" &&
+          typeof safezoneData.radius === "number"
+        ) {
+          const region = {
+            latitude: safezoneData.latitude,
+            longitude: safezoneData.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          };
 
-        setNewSafeZone({
-          latitude: safezoneData.latitude,
-          longitude: safezoneData.longitude,
-          radius: safezoneData.radius,
-        });
+          setNewSafeZone({
+            latitude: safezoneData.latitude,
+            longitude: safezoneData.longitude,
+            radius: safezoneData.radius,
+          });
 
-        const address = await getAddressFromCoordinates(
-          safezoneData.latitude,
-          safezoneData.longitude
-        );
-        if (address) {
-          setSelectedLocationAddress(address);
+          mapRef.current?.animateToRegion(region, 1000);
+
+          const address = await getAddressFromCoordinates(
+            safezoneData.latitude,
+            safezoneData.longitude
+          );
+          if (address) {
+            setSelectedLocationAddress(address);
+          }
         }
       } catch (error) {
         console.error("Error parsing safezone data:", error);
+        Alert.alert("Error", "Gagal memuat data zona aman");
       }
+    } else {
+      setNewSafeZone({
+        latitude: 0,
+        longitude: 0,
+        radius: 500,
+      });
+      setSelectedLocationAddress({
+        name: "",
+        district: "",
+        city: "",
+        province: "",
+      });
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="mx-4 rounded-lg overflow-hidden">
-        <View className="p-2 border border-teal-500 rounded-tl-lg rounded-tr-lg relative">
-          {loading ? (
-            <ActivityIndicator size="small" color="#2A9E9E" />
-          ) : errorMsg ? (
-            <ThemedText className="text-center text-red-500">
-              {errorMsg}
-            </ThemedText>
-          ) : (
-            <ThemedText className="text-center text-teal-500 font-semibold">
-              {inSafeZone
-                ? "Anda Berada di Zona Aman"
-                : "Anda Berada di Luar Zona Aman"}
-            </ThemedText>
-          )}
-
-          {/* Tombol refresh lokasi */}
-          <TouchableOpacity
-            className="absolute right-2 top-1.5"
-            onPress={refreshLocation}
-            disabled={loading}
-          >
-            <Ionicons
-              name="refresh-outline"
-              size={24}
-              color={loading ? "#ccc" : "#2A9E9E"}
-            />
-          </TouchableOpacity>
-        </View>
-
+    <View className="flex-1 bg-white">
+      <View className="rounded-lg overflow-hidden">
         <View className="relative shadow-lg">
           {loading ? (
             <View
@@ -403,55 +392,72 @@ const LocationPage = () => {
               initialRegion={initialRegion ?? undefined}
               onLongPress={handleMapLongPress}
             >
-              {/* Default Safe Zone Circle */}
-              {SAFE_ZONE && (
-                <Circle
-                  center={{
-                    latitude: SAFE_ZONE.latitude,
-                    longitude: SAFE_ZONE.longitude,
-                  }}
-                  radius={SAFE_ZONE.radius}
-                  strokeColor="rgba(0, 150, 136, 0.5)"
-                  fillColor="rgba(0, 150, 136, 0.2)"
-                />
-              )}
-
-              {/* Selected Location Marker */}
-              {isEditingZone && selectedLocation && (
+              {/* Marker posisi pengguna saat ini (baik caregiver maupun penderita) */}
+              {location?.coords && (
                 <Marker
-                  coordinate={selectedLocation}
-                  title="New Safe Zone"
-                  description="Long press to change location"
-                  pinColor="yellow"
+                  coordinate={{
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                  }}
+                  title="Lokasi Anda"
+                  description="Posisi Anda saat ini"
                 >
-                  <View className="bg-yellow-500 p-2 rounded-full">
-                    <Ionicons name="location" size={16} color="white" />
+                  <View className="bg-blue-500 p-2 rounded-full">
+                    <Ionicons name="person" size={16} color="white" />
                   </View>
                 </Marker>
               )}
 
-              {/* Selected Patient's Safe Zone */}
-              {selectedPatient?.safezone &&
+              {/* Safe Zone untuk penderita */}
+              {!isCaregiver && SAFE_ZONE && (
+                <>
+                  <Circle
+                    center={{
+                      latitude: SAFE_ZONE.latitude,
+                      longitude: SAFE_ZONE.longitude,
+                    }}
+                    radius={SAFE_ZONE.radius}
+                    strokeColor="rgba(0, 150, 136, 0.5)"
+                    fillColor="rgba(0, 150, 136, 0.2)"
+                  />
+                  <Marker
+                    coordinate={{
+                      latitude: SAFE_ZONE.latitude,
+                      longitude: SAFE_ZONE.longitude,
+                    }}
+                    title="Zona Aman"
+                    description="Pusat zona aman"
+                  >
+                    <View className="bg-teal-500 p-2 rounded-full">
+                      <Ionicons name="home" size={16} color="white" />
+                    </View>
+                  </Marker>
+                </>
+              )}
+
+              {/* Safe Zone untuk pasien yang dipilih (caregiver) */}
+              {isCaregiver &&
+                selectedPatient?.safezone &&
                 selectedPatient.safezone.latitude &&
-                selectedPatient.safezone.longitude && (
+                selectedPatient.safezone.longitude &&
+                selectedPatient.safezone.radius && (
                   <>
                     <Circle
                       center={{
-                        latitude: selectedPatient.safezone.latitude,
-                        longitude: selectedPatient.safezone.longitude,
+                        latitude: Number(selectedPatient.safezone.latitude),
+                        longitude: Number(selectedPatient.safezone.longitude),
                       }}
-                      radius={selectedPatient.safezone.radius}
+                      radius={Number(selectedPatient.safezone.radius)}
                       strokeColor="rgba(255, 165, 0, 0.5)"
                       fillColor="rgba(255, 165, 0, 0.2)"
                     />
                     <Marker
                       coordinate={{
-                        latitude: selectedPatient.safezone.latitude,
-                        longitude: selectedPatient.safezone.longitude,
+                        latitude: Number(selectedPatient.safezone.latitude),
+                        longitude: Number(selectedPatient.safezone.longitude),
                       }}
                       title={`${selectedPatient.username}'s Safe Zone`}
                       description="Current safe zone center"
-                      pinColor="orange"
                     >
                       <View className="bg-orange-500 p-2 rounded-full">
                         <Ionicons name="home" size={16} color="white" />
@@ -459,6 +465,19 @@ const LocationPage = () => {
                     </Marker>
                   </>
                 )}
+
+              {/* Marker untuk lokasi yang sedang diedit */}
+              {isCaregiver && isEditingZone && selectedLocation && (
+                <Marker
+                  coordinate={selectedLocation}
+                  title="New Safe Zone"
+                  description="Long press to change location"
+                >
+                  <View className="bg-yellow-500 p-2 rounded-full">
+                    <Ionicons name="location" size={16} color="white" />
+                  </View>
+                </Marker>
+              )}
             </MapView>
           ) : (
             <View
@@ -472,51 +491,106 @@ const LocationPage = () => {
             </View>
           )}
 
-          {/* Location info card */}
-          <View className="absolute bottom-5 left-10 right-10 bg-white shadow-lg rounded-lg p-4">
-            <ThemedText className="text-lg font-semibold">
+          {/* Pindahkan card status ke bagian atas map dengan posisi absolute */}
+          {location?.coords && (
+            <View
+              className={`absolute left-4 right-4 z-10 p-3 rounded-lg ${
+                inSafeZone ? "bg-teal-100" : "bg-orange-100"
+              }`}
+              style={{
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+              }}
+            >
+              <ThemedText
+                className={`text-center font-semibold ${
+                  inSafeZone ? "text-teal-600" : "text-orange-600"
+                }`}
+              >
+                {inSafeZone
+                  ? `Anda berada ${distance} Meter dari pusat zona aman`
+                  : `Anda berada ${
+                      distance - SAFE_ZONE.radius
+                    } Meter di luar batas zona aman`}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Status Jarak */}
+      {isCaregiver ? (
+        <View>
+          <View
+            className="absolute -top-10 p-4 w-full"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(5px)",
+            }}
+          >
+            <ThemedText className="text-lg font-bold text-gray-800 w-full">
               {isEditingZone && selectedLocation
                 ? selectedLocationAddress.name
                 : selectedPatient?.safezone
                 ? selectedLocationAddress.name
                 : "No location selected"}
             </ThemedText>
-            <ThemedText className="text-gray-500">
-              {isEditingZone && selectedLocation
-                ? `${selectedLocationAddress.district}, ${selectedLocationAddress.city}, ${selectedLocationAddress.province}`
-                : selectedPatient?.safezone
-                ? `${selectedLocationAddress.district}, ${selectedLocationAddress.city}, ${selectedLocationAddress.province}`
-                : "Select a patient and location"}
-            </ThemedText>
+            <View className="flex flex-row items-center justify-between w-full">
+              <ThemedText className="text-gray-600 flex-1">
+                {isEditingZone && selectedLocation
+                  ? `${selectedLocationAddress.district}, ${selectedLocationAddress.city}, ${selectedLocationAddress.province}`
+                  : selectedPatient?.safezone
+                  ? `${selectedLocationAddress.district}, ${selectedLocationAddress.city}, ${selectedLocationAddress.province}`
+                  : "Select a patient and location"}
+              </ThemedText>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                className="bg-teal-500 rounded-full p-2"
+                color={"#fff"}
+              />
+            </View>
           </View>
-        </View>
-      </View>
+          <View className="mt-10 p-4">
+            <View className="mb-4">
+              <TextInput
+                placeholder="Enter radius in meters"
+                value={String(newSafeZone.radius)}
+                keyboardType="numeric"
+                className="border border-gray-300 rounded-lg p-4"
+                onChangeText={(text) =>
+                  setNewSafeZone((prev) => ({
+                    ...prev,
+                    radius: Number(text) || 0,
+                  }))
+                }
+              />
+            </View>
+            <ThemedText>Choose Patient</ThemedText>
+            <View className="mb-2 border border-gray-300 rounded-lg">
+              <Picker
+                selectedValue={selectedPatient?.id}
+                onValueChange={handlePatientChange}
+              >
+                <Picker.Item label="Select Patient" value="" />
+                {patients?.map((item) => (
+                  <Picker.Item
+                    label={item.username}
+                    value={item.id}
+                    key={item.id}
+                  />
+                ))}
+              </Picker>
+            </View>
 
-      {/* Status Jarak */}
-      {isCaregiver ? (
-        <View className="p-4">
-          <ThemedText>Choose Patient</ThemedText>
-          <View className="mb-2 border border-gray-300 rounded-lg">
-            <Picker
-              selectedValue={selectedPatient?.id}
-              onValueChange={handlePatientChange}
-            >
-              <Picker.Item label="Select Patient" value="" />
-              {patients?.map((item) => (
-                <Picker.Item
-                  label={item.username}
-                  value={item.id}
-                  key={item.id}
-                />
-              ))}
-              {/* Patients will be populated here */}
-            </Picker>
-          </View>
-
-          {selectedPatient && (
             <View className="mb-2">
-              <Button
-                title={isEditingZone ? "Save Safe Zone" : "Edit Safe Zone"}
+              <TouchableOpacity
                 onPress={() => {
                   if (isEditingZone) {
                     updateSafeZone();
@@ -524,79 +598,39 @@ const LocationPage = () => {
                     setIsEditingZone(true);
                   }
                 }}
-              />
+                className="bg-teal-500 rounded-lg p-3"
+              >
+                <ThemedText className="text-white text-center">
+                  {isEditingZone ? "Save Safe Zone" : "Edit Safe Zone"}
+                </ThemedText>
+              </TouchableOpacity>
               {isEditingZone && (
                 <View className="mt-2">
-                  <Text>Long press on map to set safe zone center</Text>
+                  <ThemedText className="text-center text-gray-600">
+                    Long press on map to set safe zone center
+                  </ThemedText>
                 </View>
               )}
             </View>
-          )}
+          </View>
         </View>
       ) : null}
-      {location?.coords && isCaregiver ? (
-        <View className="mx-3">
-          <ThemedText>Safezone Radius</ThemedText>
-          <TextInput
-            placeholder="Radius (meters)"
-            value={String(newSafeZone.radius)}
-            keyboardType="numeric"
-            className="border border-gray-300 rounded-lg py-4 px-3"
-            onChangeText={(text) =>
-              setNewSafeZone((prev) => ({
-                ...prev,
-                radius: Number(text),
-              }))
-            }
-          />
-        </View>
-      ) : (
-        <View
-          className={`mt-4 mx-4 p-3 rounded-lg ${
-            inSafeZone ? "bg-teal-100" : "bg-orange-100"
-          }`}
-        >
-          <ThemedText
-            className={`text-center font-semibold ${
-              inSafeZone ? "text-teal-600" : "text-orange-600"
-            }`}
-          >
-            {inSafeZone
-              ? `Anda berada ${distance} Meter dari pusat zona aman`
-              : `Anda berada ${
-                  distance - SAFE_ZONE.radius
-                } Meter di luar batas zona aman`}
-          </ThemedText>
-        </View>
-      )}
 
       {/* Tombol Floating Call */}
-      <View className="flex flex-row items-center absolute bottom-0 right-2 gap-3">
-        <TouchableOpacity
-          className={`${
-            !inSafeZone && location?.coords ? "bg-orange-200" : "bg-gray-300"
-          } p-3 rounded-lg items-center`}
-        >
-          <ThemedText
-            className={`${
-              !inSafeZone && location?.coords
-                ? "text-orange-700"
-                : "text-gray-700"
-            }`}
-          >
-            Lakukan Panggilan darurat jika tersesat
-          </ThemedText>
-        </TouchableOpacity>
+      <View className="flex flex-row items-center justify-center px-4 pb-4 w-full">
         <TouchableOpacity
           className={`${
             !inSafeZone && location?.coords ? "bg-orange-500" : "bg-teal-500"
-          } w-14 h-14 rounded-full items-center justify-center shadow-lg`}
+          } rounded-lg p-3 w-full items-center justify-center shadow-lg`}
           onPress={handleEmergencyCall}
         >
-          <Ionicons name="call-outline" size={28} color="white" />
+          <View className="flex flex-row items-center justify-center gap-2">
+            <Ionicons name="call-outline" size={28} color="white" />
+            <ThemedText className="text-white">Hubungi Sekarang</ThemedText>
+          </View>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

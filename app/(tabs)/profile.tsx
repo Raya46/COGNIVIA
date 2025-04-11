@@ -1,26 +1,36 @@
+import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
 import { ThemedText } from "@/components/ThemedText";
-import React from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useGetSchedule } from "@/hooks/useSchedule";
 import {
-  ScrollView,
-  View,
-  Image,
-  FlatList,
+  useLogout,
+  useConnectPatient,
+  useGetCaregivers,
+  useGetConnections,
+  useUpdateConnectionStatus,
+} from "@/hooks/useUser";
+import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
   ActivityIndicator,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useGetPostByUser } from "@/hooks/usePost";
-import { router } from "expo-router";
-import { PostCardType } from "@/components/PostCard";
-import { useGetSchedule } from "@/hooks/useSchedule";
-import ScheduleCard, { ScheduleCardProps } from "@/components/ScheduleCard";
-import { useAuth } from "@/context/AuthContext";
-import { useLogout } from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
   const isCaregiver = userData?.role === "caregiver";
+  const { data: connections, isLoading: connectionsLoading } =
+    useGetConnections(userData?.id as string);
+  const { data: caregivers } = useGetCaregivers();
+  const [selectedCaregiver, setSelectedCaregiver] = useState<string>("");
+  const { mutate: connectToCaregiver } = useConnectPatient();
+  const { mutate: updateStatus } = useUpdateConnectionStatus();
   const { mutate: logout } = useLogout();
   const { schedules, isLoading: scheduleLoading } = useGetSchedule(
     undefined,
@@ -37,6 +47,22 @@ const Page = () => {
         description={item.description}
       />
     );
+  };
+
+  const handleConnectCaregiver = () => {
+    if (!selectedCaregiver || !userData?.id) return;
+
+    connectToCaregiver({
+      caregiverId: selectedCaregiver,
+      patientId: userData.id,
+    });
+  };
+
+  const handleConnectionResponse = (
+    connectionId: string,
+    status: "accepted" | "rejected"
+  ) => {
+    updateStatus({ connectionId, status });
   };
 
   if (scheduleLoading) {
@@ -101,15 +127,15 @@ const Page = () => {
 
           <TouchableOpacity
             onPress={() => logout()}
-            className="flex flex-row items-center gap-3 p-3 border border-gray-200 rounded-lg mt-6"
+            className="flex flex-row items-center gap-3 p-3 border border-gray-200 rounded-lg my-4"
           >
             <Ionicons name="log-out-outline" size={24} color={"red"} />
             <ThemedText className="text-red-500">Logout</ThemedText>
           </TouchableOpacity>
 
-          {isCaregiver ? (
-            <View className="flex flex-row items-center justify-between mt-4">
-              <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
+          <View className="flex flex-row items-center justify-between mb-3">
+            <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
+            {isCaregiver ? (
               <TouchableOpacity>
                 <ThemedText
                   onPress={() => router.push("/schedule")}
@@ -118,8 +144,8 @@ const Page = () => {
                   Detail
                 </ThemedText>
               </TouchableOpacity>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
 
           <FlatList
             data={schedules}
@@ -128,6 +154,94 @@ const Page = () => {
             scrollEnabled={false}
             ItemSeparatorComponent={() => <View className="h-1" />}
           />
+        </View>
+
+        {!isCaregiver && (
+          <View className="px-5 mt-4">
+            <ThemedText className="text-lg font-bold mb-2">
+              Hubungkan dengan Caregiver
+            </ThemedText>
+            <View className="bg-teal-500 border border-gray-300 rounded-lg">
+              <Picker
+                selectedValue={selectedCaregiver}
+                onValueChange={(value) => setSelectedCaregiver(value)}
+                style={{ color: "#fff" }}
+              >
+                <Picker.Item label="Pilih Caregiver" value="" color="#fff" />
+                {caregivers?.map((caregiver) => (
+                  <Picker.Item
+                    key={caregiver.id}
+                    label={caregiver.username}
+                    value={caregiver.id}
+                  />
+                ))}
+              </Picker>
+            </View>
+            {selectedCaregiver && (
+              <TouchableOpacity
+                className="bg-teal-500 p-3 rounded-lg mt-2"
+                onPress={handleConnectCaregiver}
+              >
+                <ThemedText className="text-white text-center font-semibold">
+                  Hubungkan dengan Caregiver
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <View className="px-5 mt-4">
+          <ThemedText className="text-lg font-bold mb-2">
+            Koneksi {isCaregiver ? "Pasien" : "Caregiver"}
+          </ThemedText>
+
+          {connectionsLoading ? (
+            <ActivityIndicator size="small" color="#008B8B" />
+          ) : (
+            <View className="space-y-2">
+              {connections?.map((connection) => (
+                <View
+                  key={connection.id}
+                  className="border border-gray-200 rounded-lg p-3"
+                >
+                  <ThemedText className="font-semibold">
+                    {isCaregiver
+                      ? connection.users?.username
+                      : connection.caregivers?.username}
+                  </ThemedText>
+                  <ThemedText className="text-gray-500">
+                    Status: {connection.status}
+                  </ThemedText>
+
+                  {connection.status === "pending" && !isCaregiver && (
+                    <View className="flex-row mt-2 space-x-2">
+                      <TouchableOpacity
+                        className="bg-teal-500 px-4 py-2 rounded"
+                        onPress={() =>
+                          handleConnectionResponse(connection.id, "accepted")
+                        }
+                      >
+                        <ThemedText className="text-white">Terima</ThemedText>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        className="bg-red-500 px-4 py-2 rounded"
+                        onPress={() =>
+                          handleConnectionResponse(connection.id, "rejected")
+                        }
+                      >
+                        <ThemedText className="text-white">Tolak</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+              {connections?.length === 0 && (
+                <ThemedText className="text-center text-gray-500">
+                  Belum ada koneksi
+                </ThemedText>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

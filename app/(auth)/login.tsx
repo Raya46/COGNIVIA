@@ -67,7 +67,7 @@ const LoginScreen = () => {
             height: 50,
             resizeMode: "contain",
           }}
-          className="rounded-lg"
+          className="rounded-xl"
         />
       </View>
 
