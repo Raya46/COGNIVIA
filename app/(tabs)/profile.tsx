@@ -20,11 +20,8 @@ import { useLogout } from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
+  const isCaregiver = userData?.role === "caregiver";
   const { mutate: logout } = useLogout();
-  const { posts, isLoading } = useGetPostByUser(
-    userData?.id as string,
-    userData?.role
-  );
   const { schedules, isLoading: scheduleLoading } = useGetSchedule(
     undefined,
     userData?.id as string
@@ -41,34 +38,8 @@ const Page = () => {
       />
     );
   };
-  const renderImagePost = ({ item }: { item: PostCardType }) => {
-    return (
-      <TouchableOpacity
-        onPress={() =>
-          router.push({
-            pathname: "/recall-memory",
-            params: {
-              id: item.id,
-              title: item.title,
-              image_url: item.image_url,
-              caption: item.caption,
-              memory_word: item.memory_word,
-              created_at: item.created_at,
-            },
-          })
-        }
-        className="w-1/3 mx-1"
-      >
-        <Image
-          source={{ uri: item.image_url }}
-          className="w-full h-40"
-          resizeMode="cover"
-        />
-      </TouchableOpacity>
-    );
-  };
 
-  if (scheduleLoading && isLoading) {
+  if (scheduleLoading) {
     return <ActivityIndicator size="small" color="#008B8B" />;
   }
   return (
@@ -90,9 +61,6 @@ const Page = () => {
               <ThemedText className="text-lg font-bold">
                 {userData?.username}
               </ThemedText>
-              <ThemedText className="mt-1 text-gray-500">
-                {userData?.email}
-              </ThemedText>
               <View className="flex flex-row items-center mt-1">
                 <Ionicons name="location" size={14} color="gray" />
                 <ThemedText className="ml-1 text-gray-500">
@@ -100,19 +68,58 @@ const Page = () => {
                 </ThemedText>
               </View>
             </View>
-          </View>
-
-          <View className="flex flex-row items-center justify-between mb-3">
-            <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
             <TouchableOpacity>
-              <ThemedText
-                onPress={() => router.push("/schedule")}
-                className="text-teal-500"
-              >
-                Detail
-              </ThemedText>
+              <Ionicons name="pencil-outline" size={24} color="black" />
             </TouchableOpacity>
           </View>
+
+          <View className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <View className="flex flex-row items-center gap-3">
+              <Ionicons name="person-outline" size={24} color={"#008B8B"} />
+              <ThemedText className="text-teal-500">Account</ThemedText>
+            </View>
+            <View className="border-t border-gray-200"></View>
+            <View className="flex flex-row items-center gap-3">
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={"#008B8B"}
+              />
+              <ThemedText className="text-teal-500">Add Caregiver</ThemedText>
+            </View>
+            <View className="border-t border-gray-200"></View>
+            <View className="flex flex-row items-center gap-3">
+              <Ionicons name="chatbubble-outline" size={24} color={"#008B8B"} />
+              <ThemedText className="text-teal-500">Help Center</ThemedText>
+            </View>
+            <View className="border-t border-gray-200"></View>
+            <View className="flex flex-row items-center gap-3">
+              <Ionicons name="headset-outline" size={24} color={"#008B8B"} />
+              <ThemedText className="text-teal-500">Contact Support</ThemedText>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => logout()}
+            className="flex flex-row items-center gap-3 p-3 border border-gray-200 rounded-lg mt-6"
+          >
+            <Ionicons name="log-out-outline" size={24} color={"red"} />
+            <ThemedText className="text-red-500">Logout</ThemedText>
+          </TouchableOpacity>
+
+          {isCaregiver ? (
+            <View className="flex flex-row items-center justify-between mt-4">
+              <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
+              <TouchableOpacity>
+                <ThemedText
+                  onPress={() => router.push("/schedule")}
+                  className="text-teal-500"
+                >
+                  Detail
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <FlatList
             data={schedules}
@@ -120,18 +127,6 @@ const Page = () => {
             keyExtractor={(item) => item.id as string}
             scrollEnabled={false}
             ItemSeparatorComponent={() => <View className="h-1" />}
-          />
-
-          <ThemedText className="mt-5 mb-3 text-lg font-bold">
-            Postingan
-          </ThemedText>
-
-          <FlatList
-            data={posts}
-            renderItem={renderImagePost}
-            keyExtractor={(item) => item.id as string}
-            numColumns={3}
-            scrollEnabled={false}
           />
         </View>
       </ScrollView>

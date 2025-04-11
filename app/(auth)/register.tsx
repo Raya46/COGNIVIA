@@ -65,7 +65,7 @@ const RegisterScreen = () => {
         <ThemedText className="text-gray-500">
           Sudah punya akun?,{" "}
           <ThemedText
-            onPress={() => router.replace("/")}
+            onPress={() => router.replace("/login")}
             className="text-blue-500"
           >
             Login Disini
