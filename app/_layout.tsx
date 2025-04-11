@@ -50,7 +50,7 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [loaded] = useFonts({
-    Inter: require("../assets/fonts/Montserrat.ttf"),
+    Inter: require("../assets/fonts/Manrope-Regular.ttf"),
   });
 
   useEffect(() => {

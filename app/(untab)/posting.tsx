@@ -126,7 +126,7 @@ const PostingScreen = () => {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <ThemedText className="text-lg font-semibold ml-4">
-            Tambahkan Data Scenario
+            Tambahkan Data Postingan
           </ThemedText>
         </View>
 
@@ -193,27 +193,6 @@ const PostingScreen = () => {
               maximumDate={new Date()}
             />
           )}
-        </View>
-
-        {/* Anggota Keluarga */}
-        <View className="mt-6">
-          <ThemedText className="text-gray-700 mb-2">
-            Anggota Keluarga
-          </ThemedText>
-          <View className="flex-row flex-wrap gap-2">
-            {familyMembers.map((name, index) => (
-              <TouchableOpacity
-                key={index}
-                className={`px-4 py-2 rounded-lg ${
-                  index % 2 === 0 ? "bg-teal-500" : "bg-gray-300"
-                }`}
-              >
-                <ThemedText className="text-white font-medium">
-                  {name}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
 
         {/* Kata Memori */}

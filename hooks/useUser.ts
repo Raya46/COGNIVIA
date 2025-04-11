@@ -71,6 +71,7 @@ export const useLogout = () =>
     mutationFn: async () => {
       await supabase.auth.signOut();
       await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("role");
     },
     onSuccess: () => {
       router.replace("/login");
@@ -111,7 +112,7 @@ export const useRegister = () => {
         username: data.username,
         email: data.email,
         role: data.role,
-        safezone: data.safezone || null,
+        quiz_cg_value: 0,
       });
 
       if (insertError) {

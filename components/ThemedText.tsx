@@ -8,6 +8,6 @@ export function ThemedText({ style, ...rest }: ThemedTextProps) {
 
 const styles = StyleSheet.create({
   regular: {
-    fontFamily: "Montserrat",
+    fontFamily: "Manrope-Regular",
   },
 });

@@ -18,6 +18,7 @@ import { useGetGuessMe } from "@/hooks/useGuessMe";
 
 const Page = () => {
   const { userData } = useAuth();
+  const isCaregiver = userData?.role === "caregiver";
   const { guessMeData, isLoading } = useGetGuessMe(userData?.id);
 
   const handlePressGuessMe = (guessMe: any) => {
@@ -49,13 +50,15 @@ const Page = () => {
       <View className="flex flex-col items-center justify-between px-4 py-2">
         <View className="flex flex-row items-center gap-2">
           <ThemedText className="text-xl font-bold">Guess Me</ThemedText>
-          <Ionicons
-            className="bg-teal-500 rounded-full p-2"
-            onPress={() => router.push("/guess-me-action/create")}
-            name="add"
-            size={18}
-            color="white"
-          />
+          {isCaregiver ? (
+            <Ionicons
+              className="bg-teal-500 rounded-full p-2"
+              onPress={() => router.push("/guess-me-action/create")}
+              name="add"
+              size={18}
+              color="white"
+            />
+          ) : null}
         </View>
         <ThemedText className="text-sm text-gray-500">
           Silahkan Tambahkan dan Pilih Data
@@ -128,18 +131,22 @@ const Page = () => {
             <ThemedText className="font-bold text-lg text-center text-[#2A9E9E]">
               Belum Ada Data Yang Ditambahkan
             </ThemedText>
-            <ThemedText className="text-center text-gray-500 mt-2">
-              Silahkan Tambahkan Data Guess Me Baru Untuk Menampilkan Items
-            </ThemedText>
-            <TouchableOpacity
-              onPress={() => router.push("/guess-me-action/create")}
-              className="mt-4 bg-teal-500 py-3 px-6 rounded-lg flex-row items-center"
-            >
-              <Ionicons name="add-circle-outline" size={20} color="white" />
-              <ThemedText className="text-white ml-2">
-                Tambahkan Data Guess Me
-              </ThemedText>
-            </TouchableOpacity>
+            {isCaregiver ? (
+              <>
+                <ThemedText className="text-center text-gray-500 mt-2">
+                  Silahkan Tambahkan Data Guess Me Baru Untuk Menampilkan Items
+                </ThemedText>
+                <TouchableOpacity
+                  onPress={() => router.push("/guess-me-action/create")}
+                  className="mt-4 bg-teal-500 py-3 px-6 rounded-lg flex-row items-center"
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="white" />
+                  <ThemedText className="text-white ml-2">
+                    Tambahkan Data Guess Me
+                  </ThemedText>
+                </TouchableOpacity>
+              </>
+            ) : null}
           </View>
         )}
       </ScrollView>
