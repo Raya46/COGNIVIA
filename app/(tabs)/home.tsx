@@ -5,6 +5,7 @@ import { useGetPostByUser } from "@/hooks/usePost";
 import React from "react";
 import { ActivityIndicator, View, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Page = () => {
   const { userData } = useAuth();
@@ -50,30 +51,32 @@ const Page = () => {
   const keyExtractor = (item: PostCardType) => item.id as string;
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2A9E9E" />
-        </View>
-      ) : posts && posts.length > 0 ? (
-        <FlatList
-          data={posts}
-          keyExtractor={keyExtractor}
-          renderItem={renderPostCard}
-          pagingEnabled
-          snapToAlignment="center"
-          decelerationRate={0.3}
-          showsVerticalScrollIndicator={false}
-          vertical
-        />
-      ) : (
-        <View className="flex-1 items-center justify-center">
-          <ThemedText className="text-gray-400 text-center">
-            Belum ada postingan. Tambahkan postingan pertama Anda!
-          </ThemedText>
-        </View>
-      )}
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView className="flex-1 bg-black">
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#2A9E9E" />
+          </View>
+        ) : posts && posts.length > 0 ? (
+          <FlatList
+            data={posts}
+            keyExtractor={keyExtractor}
+            renderItem={renderPostCard}
+            pagingEnabled
+            snapToAlignment="center"
+            decelerationRate={0.3}
+            showsVerticalScrollIndicator={false}
+            vertical
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <ThemedText className="text-gray-400 text-center">
+              Belum ada postingan. Tambahkan postingan pertama Anda!
+            </ThemedText>
+          </View>
+        )}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 

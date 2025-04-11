@@ -15,22 +15,37 @@ interface RegisterData {
 export const useLogin = () => {
   const mutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      const { data: authData, error } = await supabase.auth.signInWithPassword(
-        data
-      );
-      if (error) throw error;
+      console.log("Attempting login with:", data);
+
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        console.error("Auth error:", error);
+        throw error;
+      }
+
+      if (!authData.user) {
+        throw new Error("No user data returned");
+      }
 
       // Cek role user di metadata
-      const role = authData.user?.user_metadata?.role || "user";
+      const role = authData.user?.user_metadata?.role || "penderita";
+      console.log("User role:", role);
 
       // Ambil data user dari tabel yang sesuai
       const { data: userData, error: userError } = await supabase
-        .from(role === "caregiver" ? "caregivers" : "users")
+        .from("users")
         .select("*")
         .eq("email", data.email)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error("User data error:", userError);
+        throw userError;
+      }
 
       if (authData.session) {
         await AsyncStorage.setItem("token", authData.session.access_token);
@@ -39,17 +54,16 @@ export const useLogin = () => {
 
       return { ...authData, userData };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Login successful:", data);
       router.replace("/home");
     },
-    onError: (error) => {
-      console.error("Login error:", error.message);
+    onError: (error: any) => {
+      console.error("Login error:", error);
+      throw error;
     },
   });
-  return {
-    mutate: mutation.mutate,
-    isLoading: mutation.isPending,
-  };
+  return mutation;
 };
 
 export const useLogout = () =>
