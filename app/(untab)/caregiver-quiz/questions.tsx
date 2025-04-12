@@ -5,6 +5,7 @@ import {
   ScrollView,
   TextInput,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Alert } from "react-native";
 import { useAuth } from "@/context/AuthContext";
-import { useSendClockTest } from "@/hooks/useUser";
+import { useSendClockTest, useAnalyzeClockTest } from "@/hooks/useUser";
 import { ThemedText } from "@/components/ThemedText";
 
 type ScreenType = "questions" | "work-info" | "clock-test" | "results";
@@ -64,8 +65,9 @@ export default function QuizScreen() {
   const [experience, setExperience] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const { userData } = useAuth();
-  const { mutateAsync: sendClockTest, isPending: isLoading } =
-    useSendClockTest();
+  const { mutateAsync: sendClockTest } = useSendClockTest();
+  const { mutateAsync: analyzeClockTest } = useAnalyzeClockTest();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleOptionSelect = (questionId: number, optionId: number) => {
     setAnswers((prev) => {
@@ -155,6 +157,44 @@ export default function QuizScreen() {
     }
   };
 
+  const openCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Izin Diperlukan",
+        "Anda perlu memberikan izin untuk mengakses kamera"
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      try {
+        const selectedImageUri = result.assets[0].uri;
+        const fileName = selectedImageUri.split("/").pop();
+        const newPath = ((FileSystem.documentDirectory as string) +
+          fileName) as string;
+
+        await FileSystem.copyAsync({
+          from: selectedImageUri,
+          to: newPath,
+        });
+
+        setImageUri(newPath);
+      } catch (error) {
+        console.error("Error copying image:", error);
+        Alert.alert("Error", "Gagal menyimpan foto");
+      }
+    }
+  };
+
   const getProgressWidth = () => {
     if (currentScreen === "questions") {
       return ((currentStep + 1) / questions.length) * 33;
@@ -223,27 +263,39 @@ export default function QuizScreen() {
         return;
       }
 
+      setIsLoading(true);
+
+      // Analisis clock test menggunakan Gemini
+      const analysisResult = await analyzeClockTest({
+        userId: userData.id,
+        imageUri,
+        experience,
+      });
+
       const finalScore = calculateScore();
 
-      // Upload clock test dengan skor quiz yang sudah didapat
+      // Upload clock test dengan skor
       await sendClockTest({
         userId: userData.id,
         imageUri: imageUri,
         quizScore: finalScore,
       });
 
-      Alert.alert("Sukses", "Quiz dan Clock Test berhasil diselesaikan", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/home"),
+      // Navigasi ke halaman hasil dengan data analisis
+      router.push({
+        pathname: "/caregiver-quiz/results",
+        params: {
+          analysisResult: JSON.stringify(analysisResult),
         },
-      ]);
+      });
     } catch (error) {
       console.error("Error finishing quiz:", error);
       Alert.alert(
         "Error",
-        "Gagal menyelesaikan quiz dan upload clock test. Silakan coba lagi."
+        "Gagal menyelesaikan quiz dan analisis clock test. Silakan coba lagi."
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -367,28 +419,53 @@ export default function QuizScreen() {
                 Upload Foto Clock Test
               </ThemedText>
 
-              <TouchableOpacity
-                onPress={pickImage}
-                className="border-2 border-dashed border-gray-300 rounded-xl p-8 items-center justify-center"
-              >
-                {imageUri ? (
+              {imageUri ? (
+                <View className="items-center">
                   <Image
                     source={{ uri: imageUri }}
-                    className="w-full h-40 rounded-lg"
+                    className="w-full h-40 rounded-lg mb-4"
                     resizeMode="contain"
                   />
-                ) : (
-                  <View className="items-center">
-                    <Ionicons name="camera" size={48} color="#0D9488" />
-                    <ThemedText className="text-teal-600 text-center mt-4">
-                      Upload hasil foto clock test yang dilakukan
-                    </ThemedText>
-                    <ThemedText className="text-teal-600 text-center">
-                      dengan penyandang photo
-                    </ThemedText>
-                  </View>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setImageUri(null)}
+                    className="bg-red-500 px-4 py-2 rounded-lg"
+                  >
+                    <ThemedText className="text-white">Ambil Ulang</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View className="space-y-4">
+                  <TouchableOpacity
+                    onPress={openCamera}
+                    className="border-2 border-dashed border-teal-500 rounded-xl p-8 items-center justify-center bg-teal-50"
+                  >
+                    <View className="items-center">
+                      <Ionicons name="camera" size={48} color="#0D9488" />
+                      <ThemedText className="text-teal-600 text-center mt-4">
+                        Ambil Foto dengan Kamera
+                      </ThemedText>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={pickImage}
+                    className="border-2 border-dashed border-gray-300 rounded-xl p-8 items-center justify-center"
+                  >
+                    <View className="items-center">
+                      <Ionicons name="images" size={48} color="#0D9488" />
+                      <ThemedText className="text-teal-600 text-center mt-4">
+                        Pilih dari Galeri
+                      </ThemedText>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View className="mt-4">
+                <ThemedText className="text-gray-600 text-center">
+                  Pastikan gambar clock test terlihat jelas dan tidak blur
+                </ThemedText>
+              </View>
             </ScrollView>
 
             <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
@@ -397,15 +474,18 @@ export default function QuizScreen() {
                   imageUri ? "bg-teal-500" : "bg-gray-300"
                 }`}
                 onPress={finishQuiz}
-                disabled={!imageUri}
+                disabled={!imageUri || isLoading}
               >
                 {isLoading ? (
-                  <ThemedText className="text-white text-center font-semibold text-lg">
-                    Loading...
-                  </ThemedText>
+                  <View className="flex-row justify-center items-center">
+                    <ActivityIndicator color="white" />
+                    <ThemedText className="text-white text-center font-semibold text-lg ml-2">
+                      Menganalisis...
+                    </ThemedText>
+                  </View>
                 ) : (
                   <ThemedText className="text-white text-center font-semibold text-lg">
-                    Submit
+                    Analisis Clock Test
                   </ThemedText>
                 )}
               </TouchableOpacity>

@@ -10,6 +10,7 @@ import { ThemedText } from "./ThemedText";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { LinearGradient } from "expo-linear-gradient";
 
 export interface PostCardType {
   id?: string;
@@ -74,47 +75,88 @@ const PostCard = ({
         style={{ resizeMode: "cover" }}
       />
 
-      {/* Overlay gradient untuk memastikan teks dapat terbaca */}
-      <View className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+      {/* Gradient overlay atas */}
+      <LinearGradient
+        colors={["rgba(0,0,0,0.7)", "transparent", "transparent"]}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "30%",
+        }}
+      />
 
-      {/* Side Buttons */}
+      {/* Gradient overlay bawah */}
+      <LinearGradient
+        colors={["transparent", "transparent", "rgba(0,0,0,0.8)"]}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "50%",
+        }}
+      />
+
+      {/* Side Buttons dengan background lebih gelap */}
       <View className="absolute right-4 bottom-32 items-center space-y-6">
         {/* Recall Button */}
         <TouchableOpacity className="items-center" onPress={handleRecallPress}>
-          <View className="bg-black/50 rounded-full p-3 mb-1">
+          <View className="bg-black/60 rounded-full p-3 mb-1">
             <Ionicons
               name="file-tray-stacked-outline"
               size={28}
               color="white"
             />
           </View>
-          <ThemedText className="text-white text-md">Recall</ThemedText>
+          <ThemedText className="text-white text-md font-medium">
+            Recall
+          </ThemedText>
         </TouchableOpacity>
 
         {/* Comment Button */}
         <TouchableOpacity className="items-center" onPress={handleCommentPress}>
-          <View className="bg-black/50 rounded-full p-3 mb-1">
+          <View className="bg-black/60 rounded-full p-3 mb-1">
             <Ionicons name="chatbubble-outline" size={28} color="white" />
           </View>
-          <ThemedText className="text-white text-md">{comment}</ThemedText>
+          <ThemedText className="text-white text-md font-medium">
+            {comment}
+          </ThemedText>
         </TouchableOpacity>
 
         {/* Save Button */}
         <TouchableOpacity className="items-center">
-          <View className="bg-black/50 rounded-full p-3 mb-1">
+          <View className="bg-black/60 rounded-full p-3 mb-1">
             <Ionicons name="bookmark-outline" size={28} color="white" />
           </View>
-          <ThemedText className="text-white text-md">Save</ThemedText>
+          <ThemedText className="text-white text-md font-medium">
+            Save
+          </ThemedText>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Content dengan shadow tambahan untuk keterbacaan */}
       <View className="absolute bottom-10 p-4 pr-20">
-        <ThemedText className="text-white text-xl font-bold mb-2">
+        <ThemedText
+          className="text-white text-xl font-bold mb-2"
+          style={{
+            textShadowColor: "rgba(0, 0, 0, 0.75)",
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 3,
+          }}
+        >
           {title}
         </ThemedText>
         <View>
-          <ThemedText className="text-white text-base">
+          <ThemedText
+            className="text-white text-base"
+            style={{
+              textShadowColor: "rgba(0, 0, 0, 0.75)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 3,
+            }}
+          >
             {truncatedCaption}
           </ThemedText>
           {caption.length > MAX_CAPTION_LENGTH && (
@@ -122,7 +164,14 @@ const PostCard = ({
               onPress={() => setShowFullCaption(!showFullCaption)}
               className="mt-1"
             >
-              <ThemedText className="text-gray-300 text-sm">
+              <ThemedText
+                className="text-gray-300 text-sm"
+                style={{
+                  textShadowColor: "rgba(0, 0, 0, 0.75)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 3,
+                }}
+              >
                 {showFullCaption ? "Show less" : "See more"}
               </ThemedText>
             </TouchableOpacity>

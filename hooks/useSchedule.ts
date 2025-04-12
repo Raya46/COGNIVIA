@@ -3,29 +3,33 @@ import { Schedule } from "@/types/schedule.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 
-export const useGetSchedule = (selectedDate?: string, user_id?: string) => {
+export const useGetSchedule = (caregiverId?: string, userId?: string) => {
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["schedules", selectedDate, user_id],
+    queryKey: ["schedules", caregiverId, userId],
     queryFn: async () => {
       let query = supabase
         .from("schedules")
         .select("*")
-        .order("time", { ascending: true });
+        .order("created_at", { ascending: false });
 
-      if (selectedDate) {
-        query = query.eq("date", selectedDate);
+      if (caregiverId) {
+        query = query.eq("created_by", caregiverId);
+      } else if (userId) {
+        query = query.eq("user_id", userId);
       }
 
-      if (user_id) {
-        query = query.eq("user_id", user_id);
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching schedules:", error);
+        throw error;
       }
 
-      const { data: schedules, error } = await query;
-      if (error) throw error;
-      return schedules;
+      return data;
     },
-    enabled: true,
+    enabled: !!caregiverId || !!userId,
   });
+
   return { schedules, isLoading };
 };
 

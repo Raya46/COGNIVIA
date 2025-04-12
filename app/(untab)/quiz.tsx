@@ -1,19 +1,56 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import StartQuiz from "@/assets/images/hospital-family-visit.png";
+import { useCheckCaregiverStatus } from "@/hooks/useUser";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import StartQuiz from "@/assets/images/hospital-family-visit.png";
+import { useEffect } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function QuizScreen() {
   const router = useRouter();
+  const { data: caregiverStatus, isLoading, error } = useCheckCaregiverStatus();
+
+  useEffect(() => {
+    console.log("Quiz Screen Status Check:", {
+      isLoading,
+      caregiverStatus,
+      error,
+    });
+
+    // Jika profil sudah lengkap, redirect ke home
+    if (!isLoading && caregiverStatus?.isProfileComplete) {
+      console.log("Redirecting from Quiz to Home (profile complete)...");
+      router.replace("/home");
+    }
+  }, [isLoading, caregiverStatus, router]);
+
+  // Tampilkan loading state
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#2A9E9E" />
+        <Text className="mt-4 text-gray-600">
+          Memeriksa status caregiver...
+        </Text>
+      </View>
+    );
+  }
+
+  // Jika profil sudah lengkap tapi belum redirect
+  if (caregiverStatus?.isProfileComplete) {
+    console.log("Profile complete, rendering null while waiting for redirect.");
+    return null;
+  }
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <View className="flex-1 items-center justify-between px-4 pb-8">
         <View className="flex-1 items-center justify-center">
@@ -28,8 +65,8 @@ export default function QuizScreen() {
           </Text>
 
           <Text className="text-gray-600 text-center px-4 mb-8">
-            Tes ini akan menguji pengetahuan dasar Anda sebagai caregiver. Harap
-            jawab dengan jujur dan teliti.
+            Tes ini akan menguji pengetahuan dasar Anda sebagai caregiver dan
+            mengupload Clock Drawing Test. Harap jawab dengan jujur dan teliti.
           </Text>
         </View>
 

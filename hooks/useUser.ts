@@ -6,6 +6,9 @@ import { router } from "expo-router";
 import { Alert } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleAIFileManager } from "@google/generative-ai/server";
+import path from "path";
 
 interface RegisterData {
   username: string;
@@ -351,7 +354,7 @@ export const useSendClockTest = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["caregiverProfile"] });
-      router.replace("/home");
+      queryClient.invalidateQueries({ queryKey: ["caregiverStatus"] });
     },
     onError: (error: Error) => {
       console.error("Error sending clock test:", error);
@@ -379,25 +382,62 @@ export const useCheckCaregiverStatus = () => {
   return useQuery({
     queryKey: ["caregiverStatus", userData?.id],
     queryFn: async () => {
+      console.log("Fetching caregiver status for user:", userData?.id);
       if (!userData?.id) {
-        throw new Error("User ID tidak ditemukan");
+        console.warn("User ID not available for fetching caregiver status.");
+        return null;
       }
 
       const { data, error } = await supabase
         .from("caregivers")
-        .select("quiz_cg_value, clocktest")
+        .select("quiz_cg_value, clocktest, level")
         .eq("id", userData.id)
         .single();
 
       if (error) {
-        console.error("Error fetching caregiver status:", error);
-        throw error;
+        if (error.code === "PGRST116") {
+          console.log("No caregiver record found for user:", userData.id);
+          return {
+            quiz_cg_value: null,
+            clocktest: null,
+            level: null,
+            isProfileComplete: false,
+          };
+        } else {
+          console.error("Error fetching caregiver status:", error);
+          throw error;
+        }
       }
 
-      return data;
+      if (!data) {
+        console.warn("Caregiver status data is unexpectedly null after fetch.");
+        return null;
+      }
+
+      // Cek apakah semua field terisi
+      const isProfileComplete =
+        data.quiz_cg_value !== null &&
+        data.clocktest !== null &&
+        data.clocktest !== "" &&
+        data.level !== null;
+
+      console.log("Caregiver Status Result:", {
+        quiz_cg_value: data.quiz_cg_value,
+        clocktest: data.clocktest,
+        level: data.level,
+        isProfileComplete,
+      });
+
+      return {
+        ...data,
+        isProfileComplete,
+      };
     },
     enabled: !!userData?.id && userData?.role === "caregiver",
-    retry: false,
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
   });
 };
 
@@ -500,6 +540,181 @@ export const useUpdateConnectionStatus = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+  });
+};
+
+const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+
+const genAi = new GoogleGenerativeAI(apiKey as string);
+
+// Di useUser.ts, tambahkan fungsi untuk analisis clock test
+export const useAnalyzeClockTest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      imageUri,
+    }: {
+      userId: string;
+      imageUri: string;
+      experience: string;
+    }) => {
+      try {
+        const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        const prompt = `Analisis gambar Clock Test ini dan berikan penilaian dalam format JSON yang valid. Gunakan kriteria berikut:
+
+1. Evaluasi Clock Test (skor 0-5 untuk setiap aspek):
+- Kelengkapan dan urutan angka
+- Posisi dan proporsi angka
+- Ketepatan jarum jam
+
+2. Level Demensia (0-5):
+- Level 0: Tidak ada indikasi demensia
+- Level 1: Indikasi sangat ringan
+- Level 2: Demensia ringan
+- Level 3: Demensia sedang
+- Level 4: Demensia menengah-berat
+- Level 5: Demensia berat
+
+3. Analisis Gejala dan Rekomendasi
+
+PENTING: Berikan respons HANYA dalam format JSON yang valid seperti contoh berikut:
+
+{
+  "clockTest": {
+    "numberCompleteness": 5,
+    "numberPosition": 4,
+    "clockHands": 3,
+    "totalScore": 12
+  },
+  "dementiaAssessment": {
+    "level": 2,
+    "description": "Demensia ringan",
+    "mainSymptoms": ["Gangguan memori ringan", "Kesulitan dalam perencanaan"],
+    "severity": "ringan"
+  },
+  "careNeeds": {
+    "requiresMedicalAttention": true,
+    "supervisionLevel": "sedang",
+    "specialCare": ["Bantuan aktivitas sehari-hari", "Pengawasan pengobatan"],
+    "recommendations": ["Konsultasi neurolog", "Terapi okupasi"]
+  },
+  "caregiverEvaluation": {
+    "perawatDiperiksa": "Perawat menunjukkan kemampuan menangani emosi yang kuat dan memiliki pemahaman yang baik tentang kebutuhan pasien demensia",
+    "penyandangDitest": "Penyandang memiliki gejala demensia cukup signifikan dengan gangguan orientasi tempat dan waktu",
+    "aksesFaskes": "Sangat direkomendasikan untuk mendapatkan diagnosis resmi dan mengakses layanan perawatan khusus demensia"
+  },
+  "summary": {
+    "shortDescription": "Pasien menunjukkan tanda-tanda demensia ringan",
+    "keyPoints": ["Perlu pengawasan rutin", "Masih bisa mandiri dengan bantuan minimal"],
+    "urgentActions": ["Pemeriksaan neurolog", "Penyesuaian lingkungan rumah"]
+  }
+}`;
+
+        // Gunakan model gemini-pro-vision untuk analisis gambar
+        const model = genAi.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const result = await model.generateContent([
+          {
+            text: prompt,
+          },
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64,
+            },
+          },
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+
+        try {
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            throw new Error("Tidak dapat menemukan format JSON yang valid");
+          }
+
+          const jsonString = jsonMatch[0];
+          const analysisResult = JSON.parse(jsonString);
+
+          // Validasi dan update level ke database
+          const dementiaLevel = analysisResult.dementiaAssessment.level;
+
+          // Update level di tabel caregivers
+          const { error: updateError } = await supabase
+            .from("caregivers")
+            .update({
+              level: dementiaLevel,
+            })
+            .eq("id", userId);
+
+          if (updateError) {
+            console.error("Error updating dementia level:", updateError);
+            throw updateError;
+          }
+
+          return {
+            ...analysisResult,
+            dementiaLevel,
+          };
+        } catch (parseError) {
+          console.error("Error parsing response:", parseError);
+          console.error("Raw response:", text);
+          throw new Error("Gagal memproses hasil analisis");
+        }
+      } catch (error) {
+        console.error("Error analyzing clock test:", error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      // Invalidate queries yang perlu di-refresh
+      queryClient.invalidateQueries({ queryKey: ["caregiverStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["caregiverProfile"] });
+    },
+    onError: (error: Error) => {
+      console.error("Analysis error:", error);
+      Alert.alert("Error", "Gagal menganalisis clock test. Silakan coba lagi.");
+    },
+  });
+};
+
+export const useUpdateQuizScore = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      quizScore,
+    }: {
+      userId: string;
+      quizScore: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("caregivers")
+        .update({
+          quiz_cg_value: quizScore,
+        })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caregiverStatus"] });
+      router.replace("/home");
+    },
+    onError: (error) => {
+      console.error("Error updating quiz score:", error);
+      Alert.alert("Error", "Gagal menyimpan nilai kuis");
     },
   });
 };
