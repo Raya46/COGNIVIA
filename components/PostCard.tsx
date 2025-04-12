@@ -110,7 +110,7 @@ const PostCard = ({
               color="white"
             />
           </View>
-          <ThemedText className="text-white text-md font-medium">
+          <ThemedText type="semibold" className="text-white text-md font-medium">
             Recall
           </ThemedText>
         </TouchableOpacity>
@@ -130,7 +130,7 @@ const PostCard = ({
           <View className="bg-black/60 rounded-full p-3 mb-1">
             <Ionicons name="bookmark-outline" size={28} color="white" />
           </View>
-          <ThemedText className="text-white text-md font-medium">
+          <ThemedText type="semibold" className="text-white text-md font-medium">
             Save
           </ThemedText>
         </TouchableOpacity>

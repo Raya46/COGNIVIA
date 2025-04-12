@@ -617,7 +617,7 @@ const LocationPage = () => {
       ) : null}
 
       {/* Tombol Floating Call */}
-      <View className="flex flex-row items-center justify-center px-4 pb-4 w-full">
+      <View className="flex flex-row items-center justify-center px-4 w-full">
         <TouchableOpacity
           className={`${
             !inSafeZone && location?.coords ? "bg-orange-500" : "bg-teal-500"

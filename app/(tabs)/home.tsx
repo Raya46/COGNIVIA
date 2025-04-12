@@ -10,7 +10,7 @@ import {
   FlatList,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  Button,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -33,12 +33,30 @@ const Page = () => {
     userData?.id as string,
     userData?.role
   );
-  const { data: caregiverStatus } = useCheckCaregiverStatus();
+  type CaregiverStatus = { isProfileComplete: boolean; level: number } | null;
+  const { data: caregiverStatus } = useCheckCaregiverStatus() as {
+    data: CaregiverStatus;
+  };
   const router = useRouter();
 
   useEffect(() => {
-    console.log(userData);
-  }, []);
+    console.log(caregiverStatus);
+    if (caregiverStatus && !caregiverStatus.isProfileComplete) {
+      router.replace("/quiz");
+    }
+  }, [caregiverStatus]);
+
+  // Tampilkan loading state saat mengecek status
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#2A9E9E" />
+        <ThemedText className="mt-4 text-gray-600">
+          Memeriksa status caregiver...
+        </ThemedText>
+      </View>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -184,7 +202,7 @@ const Page = () => {
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
         >
-          <View className="py-4">
+          <View className="mt-10">
             <View className="flex-row items-center justify-between mt-4">
               <View className="flex-row items-center">
                 <View className="w-10 h-10 bg-gray-300 rounded-full" />
@@ -197,6 +215,10 @@ const Page = () => {
                   </ThemedText>
                 </View>
               </View>
+              <Button
+                onPress={() => router.push("/caregiver-quiz/questions")}
+                title="tes"
+              />
               <Ionicons name="notifications-outline" size={24} color="black" />
             </View>
             <View className="mt-4">
@@ -237,14 +259,27 @@ const Page = () => {
                   3
                 </ThemedText>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 bg-teal-500 p-4 rounded-lg mx-1">
-                <ThemedText className="text-white font-bold text-center">
-                  Rutinitas Hari Ini
-                </ThemedText>
-                <ThemedText className="text-white text-2xl font-bold text-center">
-                  2
-                </ThemedText>
-              </TouchableOpacity>
+              {caregiverStatus?.level !== undefined && caregiverStatus.level >= 4 ? (
+                <TouchableOpacity
+                  className="flex-1 bg-red-500 p-4 rounded-lg mx-1"
+                >
+                  <ThemedText className="text-white font-bold text-center">
+                    Konsultasi Halodoc
+                  </ThemedText>
+                  <ThemedText className="text-white text-sm text-center mt-1">
+                    16.00
+                  </ThemedText>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity className="flex-1 bg-teal-600 p-4 rounded-lg mx-1">
+                  <ThemedText className="text-white font-bold text-center">
+                    Rutinitas Hari Ini
+                  </ThemedText>
+                  <ThemedText className="text-white text-2xl font-bold text-center">
+                    2
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
             </View>
             <FlatList
               data={posts}
