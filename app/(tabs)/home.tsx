@@ -18,14 +18,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import {
-  getAllPatients,
+  useGetAllPatients,
   useCheckCaregiverStatus,
   useConnectPatient,
 } from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
-  const { patients, isLoading: isLoadingPatient } = getAllPatients();
+  const { patients, isLoading: isLoadingPatient } = useGetAllPatients();
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const { mutate: connectPatient } = useConnectPatient();
   const isCaregiver = userData?.role === "caregiver";

@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/AuthContext";
-import { getAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
+import { useGetAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
@@ -45,7 +45,7 @@ interface Patient {
 
 const LocationPage = () => {
   const { userData } = useAuth();
-  const { patients, isLoading } = getAllPatients();
+  const { patients, isLoading } = useGetAllPatients();
   const isCaregiver = userData?.role === "caregiver";
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isEditingZone, setIsEditingZone] = useState(false);
