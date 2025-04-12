@@ -221,7 +221,7 @@ export const useCheckSession = () => {
   return { checkSession };
 };
 
-export const getAllPatients = () => {
+export const useGetAllPatients = () => {
   const { data: patients, isLoading } = useQuery({
     queryKey: ["patients"],
     queryFn: async () => {
