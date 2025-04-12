@@ -44,7 +44,7 @@
 - **Recall Memory** — Speech-to-text & text-to-speech to help patients recall info
 - **Guess Me** — Face recognition using ML Kit to identify familiar people
 - **Clock Test** — Interactive cognitive test for dementia screening
-- **Tool Calling** — Sends audio/media files to caregivers via Telegram
+- **AI Agent** — Sends media files to caregivers via Telegram
 - **Safe Zone** — Real-time location tracking with Google Maps
 - **Secure User Data** — Stored and authenticated with Supabase
 
