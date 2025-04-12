@@ -53,7 +53,7 @@
 ## APK
 
 Akses APK melalui tag release di sini:  
-**[Download APK](https://github.com/user-attachments/assets/92fa1da4-998f-4db5-a64e-8548e229f570)**
+**[Download APK](https://expo.dev/artifacts/eas/wYPe9XB8pv98C6oNaHouw8.apk)**
 
 ---
 
