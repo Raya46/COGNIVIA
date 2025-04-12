@@ -1,14 +1,12 @@
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/supabase/supabase";
 import { SafeZone } from "@/types/user.type";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 import { Alert } from "react-native";
-import * as FileSystem from "expo-file-system";
-import { useAuth } from "@/context/AuthContext";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleAIFileManager } from "@google/generative-ai/server";
-import path from "path";
 
 interface RegisterData {
   username: string;
@@ -224,7 +222,7 @@ export const useCheckSession = () => {
   return { checkSession };
 };
 
-export const useGetAllPatients = () => {
+export const getAllPatients = () => {
   const { data: patients, isLoading } = useQuery({
     queryKey: ["patients"],
     queryFn: async () => {
@@ -437,7 +435,6 @@ export const useCheckCaregiverStatus = () => {
     retry: 1,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
   });
 };
 

@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/AuthContext";
-import { useGetAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
+import { getAllPatients, useUpdateSafeZone } from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
@@ -45,7 +45,7 @@ interface Patient {
 
 const LocationPage = () => {
   const { userData } = useAuth();
-  const { patients, isLoading } = useGetAllPatients();
+  const { patients, isLoading } = getAllPatients();
   const isCaregiver = userData?.role === "caregiver";
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isEditingZone, setIsEditingZone] = useState(false);
@@ -491,11 +491,12 @@ const LocationPage = () => {
             </View>
           )}
 
-          {/* Pindahkan card status ke bagian atas map dengan posisi absolute */}
           {location?.coords && (
             <View
-              className={`absolute left-4 right-4 z-10 p-3 rounded-lg ${
-                inSafeZone ? "bg-teal-100" : "bg-orange-100"
+              className={`absolute top-14 left-4 right-4 z-10 px-4 py-3 rounded-lg text-center ${
+                inSafeZone
+                  ? "bg-teal-100"
+                  : "bg-orange-100 border border-red-300"
               }`}
               style={{
                 shadowColor: "#000",
@@ -508,17 +509,18 @@ const LocationPage = () => {
                 elevation: 5,
               }}
             >
-              <ThemedText
-                className={`text-center font-semibold ${
-                  inSafeZone ? "text-teal-600" : "text-orange-600"
-                }`}
-              >
-                {inSafeZone
-                  ? `Anda berada ${distance} Meter dari pusat zona aman`
-                  : `Anda berada ${
-                      distance - SAFE_ZONE.radius
-                    } Meter di luar batas zona aman`}
-              </ThemedText>
+              <View className="flex flex-row items-center gap-3">
+                <Ionicons name="alert-circle-outline" size={24} color={"red"} />
+                <ThemedText
+                  className={`text-center font-semibold ${
+                    inSafeZone ? "text-teal-600" : "text-orange-600"
+                  }`}
+                >
+                  {inSafeZone
+                    ? `Anda berada di pusat zona aman`
+                    : `Anda berada di luar batas zona aman`}
+                </ThemedText>
+              </View>
             </View>
           )}
         </View>
@@ -534,13 +536,22 @@ const LocationPage = () => {
               backdropFilter: "blur(5px)",
             }}
           >
-            <ThemedText className="text-lg font-bold text-gray-800 w-full">
-              {isEditingZone && selectedLocation
-                ? selectedLocationAddress.name
-                : selectedPatient?.safezone
-                ? selectedLocationAddress.name
-                : "No location selected"}
-            </ThemedText>
+            <View className="flex flex-row items-center justify-between">
+              <ThemedText className="text-2xl font-bold text-gray-800">
+                {isEditingZone && selectedLocation
+                  ? selectedLocationAddress.name
+                  : selectedPatient?.safezone
+                  ? selectedLocationAddress.name
+                  : "No location selected"}
+              </ThemedText>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                className="bg-teal-500 rounded-full p-2 self-end"
+                color={"#fff"}
+              />
+            </View>
+
             <View className="flex flex-row items-center justify-between w-full">
               <ThemedText className="text-gray-600 flex-1">
                 {isEditingZone && selectedLocation
@@ -549,12 +560,6 @@ const LocationPage = () => {
                   ? `${selectedLocationAddress.district}, ${selectedLocationAddress.city}, ${selectedLocationAddress.province}`
                   : "Select a patient and location"}
               </ThemedText>
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                className="bg-teal-500 rounded-full p-2"
-                color={"#fff"}
-              />
             </View>
           </View>
           <View className="mt-10 p-4">
@@ -572,7 +577,7 @@ const LocationPage = () => {
                 }
               />
             </View>
-            <ThemedText>Choose Patient</ThemedText>
+            <ThemedText className="mb-3">Choose Patient</ThemedText>
             <View className="mb-2 border border-gray-300 rounded-lg">
               <Picker
                 selectedValue={selectedPatient?.id}
@@ -589,7 +594,34 @@ const LocationPage = () => {
               </Picker>
             </View>
 
-            <View className="mb-2">
+            {location?.coords && (
+              <View
+                className={`px-4 my-2 py-3 rounded-lg text-center ${
+                  inSafeZone
+                    ? "bg-teal-100"
+                    : "bg-orange-100 border border-red-300"
+                }`}
+              >
+                <View className="flex flex-row items-center gap-3">
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={24}
+                    color={"red"}
+                  />
+                  <ThemedText
+                    className={`text-center font-semibold ${
+                      inSafeZone ? "text-teal-600" : "text-orange-600"
+                    }`}
+                  >
+                    {inSafeZone
+                      ? `Anda berada di pusat zona aman`
+                      : `Anda berada di luar batas zona aman`}
+                  </ThemedText>
+                </View>
+              </View>
+            )}
+
+            <View className="my-3">
               <TouchableOpacity
                 onPress={() => {
                   if (isEditingZone) {
@@ -598,7 +630,7 @@ const LocationPage = () => {
                     setIsEditingZone(true);
                   }
                 }}
-                className="bg-teal-500 rounded-lg p-3"
+                className="bg-teal-500 rounded-full px-3 py-4"
               >
                 <ThemedText className="text-white text-center">
                   {isEditingZone ? "Save Safe Zone" : "Edit Safe Zone"}
@@ -617,11 +649,11 @@ const LocationPage = () => {
       ) : null}
 
       {/* Tombol Floating Call */}
-      <View className="flex flex-row items-center justify-center px-4 pb-4 w-full">
+      <View className="flex flex-row items-center justify-center px-4 w-full">
         <TouchableOpacity
           className={`${
             !inSafeZone && location?.coords ? "bg-orange-500" : "bg-teal-500"
-          } rounded-lg p-3 w-full items-center justify-center shadow-lg`}
+          } p-3 w-full items-center justify-center shadow-lg rounded-full`}
           onPress={handleEmergencyCall}
         >
           <View className="flex flex-row items-center justify-center gap-2">
