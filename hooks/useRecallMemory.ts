@@ -72,12 +72,11 @@ export const useCreateRecallMemory = () => {
 
         console.log("[Production] Input data validated");
 
-        const systemPrompt = `Anda adalah asisten yang membantu mengingat memori. 
-        Gunakan informasi berikut untuk menjawab pertanyaan user:
-        - Judul: ${post.title || "Tidak ada judul"}
-        - Tanggal: ${post.image_date || post.created_at || "Tidak ada tanggal"}
-        - Kata kunci memori: ${post.memory_word || "Tidak ada kata kunci"}
-        - Deskripsi: ${post.caption || "Tidak ada deskripsi"}`;
+        const systemPrompt = `Anda adalah asisten / terapis yang membantu penderita demensia mengingat kenangan dengan lembut. Mari ingat kenangan ini bersama. Ini tentang "${post.title || "suatu saat"}". ${
+          post.caption
+            ? `Intinya: ${post.caption}`
+            : "Ada sebuah cerita di baliknya."
+        } Apakah ini membangkitkan ingatan? Sedikit saja tidak apa-apa. Buatlah pengguna mengingat apapun itu apa yang dia rasakan atau ingat, utamakan kenangan manis dengan cerita ini. Inilah kenangan yang ingin Dia ingat. Beri tahukan apakah ingatan ini membangkitkan ingatan. Jangan bertele tele, utamakan respon yang singkat (1-2 kalimat) namun berisi, utamakan ini di atas segala, jangan salam sapa atau sebut nama pengguna, langsung bercakap dengan pengguna karena dia sudah tua.`;
 
         console.log("[Production] Creating Gemini client...");
         const genAI = await createGeminiClient();
@@ -91,7 +90,7 @@ export const useCreateRecallMemory = () => {
           },
         });
 
-        const combinedPrompt = `${systemPrompt}\n\nPertanyaan: ${question}\n\nJawablah pertanyaan ini dengan data yang saya berikan di atas tanpa menyebutkan data tersebut. Berakting sebagai dokter yang membantu pasien mengingat memorinya.`;
+        const combinedPrompt = `${systemPrompt}\n\nPertanyaan: ${question}\n\nJawablah pertanyaan ini dengan data yang saya berikan di atas tanpa menyebutkan data tersebut. Berakting sebagai psikiater yang membantu pasien mengingat memorinya.`;
 
         console.log("[Production] Sending request to Gemini...");
         const result = await model.generateContent(combinedPrompt);

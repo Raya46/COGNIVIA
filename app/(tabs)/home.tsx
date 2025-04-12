@@ -22,11 +22,18 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import { useRouter } from "expo-router";
+import {
+  useGetAllPatients,
+  useCheckCaregiverStatus,
+  useConnectPatient,
+} from "@/hooks/useUser";
 
 const Page = () => {
   const { userData } = useAuth();
-  const { data: caregiverStatus, isLoading } = useCheckCaregiverStatus();
-  const { patients, isLoading: isLoadingPatient } = getAllPatients();
+  const { patients, isLoading: isLoadingPatient } = useGetAllPatients();
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const { mutate: connectPatient } = useConnectPatient();
   const isCaregiver = userData?.role === "caregiver";

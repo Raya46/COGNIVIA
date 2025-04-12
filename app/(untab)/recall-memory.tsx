@@ -5,10 +5,10 @@ import {
   useCreateRecallMemory,
   useRecallMemories,
 } from "@/hooks/useRecallMemory";
+import { Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { router, useLocalSearchParams } from "expo-router";
-import * as Speech from "expo-speech";
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -34,6 +34,7 @@ const Page = () => {
   const [recognizing, setRecognizing] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [speaking, setSpeaking] = useState(false);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   const animatedValue = useRef(new Animated.Value(0)).current;
   const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
@@ -82,6 +83,14 @@ const Page = () => {
     useRecallMemories(params.id as string);
 
   const [answer, setAnswer] = useState("");
+
+  const unloadSound = async () => {
+    if (sound) {
+      console.log("Unloading Sound");
+      await sound.unloadAsync();
+      setSound(null); // Clear the sound state
+    }
+  };
 
   useSpeechRecognitionEvent("start", () => {
     setRecognizing(true);
@@ -142,31 +151,179 @@ const Page = () => {
     }
   };
 
-  const speakWithAnimation = (text: string) => {
+  const speakWithAnimation = async (text: string) => {
+    if (speaking || !text) return; // Prevent concurrent speech or empty text
+
     setSpeaking(true);
     startPulseAnimation();
+    await unloadSound(); // Unload previous sound if any
 
-    Speech.speak(text, {
-      language: "id-ID",
-      onStart: () => {
-        console.log("Speech started");
-      },
-      onDone: () => {
-        console.log("Speech done");
-        setSpeaking(false);
-        stopPulseAnimation();
-      },
-      onStopped: () => {
-        console.log("Speech stopped");
-        setSpeaking(false);
-        stopPulseAnimation();
-      },
-      onError: (error) => {
-        console.error("Speech error:", error.message);
-        setSpeaking(false);
-        stopPulseAnimation();
+    const XI_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY; // Replace with your actual key (use env vars ideally)
+    const VOICE_ID = "TMvmhlKUioQA4U7LOoko";
+
+    if (!XI_API_KEY) {
+      Alert.alert("Error", "API key for ElevenLabs is missing.");
+      setSpeaking(false);
+      stopPulseAnimation();
+      return;
+    }
+
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+    const headers: Record<string, string> = {
+      Accept: "audio/mpeg",
+      "Content-Type": "application/json",
+      "xi-api-key": XI_API_KEY,
+    };
+    const body = JSON.stringify({
+      text: text,
+      model_id: "eleven_multilingual_v2", // Or another suitable model
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
       },
     });
+
+    try {
+      console.log("Requesting TTS from ElevenLabs...");
+      const response = await fetch(url, { method: "POST", headers, body });
+      console.log("TTS Response Status:", response.status); // <-- Add logging
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("ElevenLabs API Error Body:", errorBody); // <-- Log error body
+        throw new Error(
+          `ElevenLabs API Error: ${response.status} - ${errorBody}`
+        );
+      }
+
+      // --- Process the audio blob ---
+      console.log("Processing audio blob...");
+      const audioBlob = await response.blob();
+      // Log blob details
+      console.log("Audio Blob received:", {
+        size: audioBlob.size,
+        type: audioBlob.type,
+      });
+
+      if (audioBlob.size === 0) {
+        console.error("Received empty audio blob from API.");
+        throw new Error("Empty audio data received.");
+      }
+
+      // Instead of checking for type strictly, only throw if the blob type is set and not audio.
+      if (audioBlob.type && !audioBlob.type.startsWith("audio/")) {
+        console.error(`Received blob of unexpected type: ${audioBlob.type}`);
+        throw new Error(
+          `Expected audio blob, but received type ${audioBlob.type}`
+        );
+      }
+
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        console.log("FileReader onloadend triggered.");
+        let base64data = reader.result as string;
+        console.log(
+          "Raw reader result (first 100 chars):",
+          base64data?.substring(0, 100)
+        );
+
+        // If result doesn't start with "data:audio/", check other possibilities
+        if (!base64data.startsWith("data:audio/")) {
+          if (base64data.startsWith("data:application/octet-stream")) {
+            // Replace octet-stream with the desired audio MIME type (e.g., audio/mpeg)
+            base64data = base64data.replace(
+              "data:application/octet-stream",
+              "data:audio/mpeg"
+            );
+            console.log(
+              "Replaced application/octet-stream with data:audio/mpeg."
+            );
+          } else if (base64data.startsWith("data:;base64")) {
+            // Handle missing mime type
+            base64data = base64data.replace(
+              "data:;base64",
+              "data:audio/mpeg;base64"
+            );
+            console.log("Replaced empty mime type with data:audio/mpeg.");
+          } else {
+            console.error(
+              "Failed to read audio data correctly. Result was not a valid audio data URI.",
+              `Type: ${typeof base64data}, StartsWith 'data:audio/': ${base64data?.startsWith(
+                "data:audio/"
+              )}`
+            );
+            Alert.alert(
+              "Error",
+              "Gagal memproses data audio dari respons API."
+            );
+            setSpeaking(false);
+            stopPulseAnimation();
+            return;
+          }
+        }
+
+        console.log("Base64 data seems valid, creating sound object...");
+        try {
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            { uri: base64data },
+            { shouldPlay: true },
+            (status) => {
+              if (!status.isLoaded) {
+                if (status.error) {
+                  console.error(`Playback Error: ${status.error}`);
+                  setSpeaking(false);
+                  stopPulseAnimation();
+                  unloadSound();
+                  Alert.alert("Error", `Gagal memutar suara: ${status.error}`);
+                }
+              } else {
+                if (status.didJustFinish) {
+                  console.log("Playback finished successfully.");
+                  setSpeaking(false);
+                  stopPulseAnimation();
+                  unloadSound();
+                }
+              }
+            }
+          );
+          setSound(newSound);
+          console.log("Playing Sound");
+        } catch (playbackError: any) {
+          console.error(
+            "Error creating or playing sound:",
+            playbackError.message
+          );
+          Alert.alert("Error", "Gagal memutar suara setelah diunduh.");
+          setSpeaking(false);
+          stopPulseAnimation();
+        }
+      };
+
+      reader.onerror = (event) => {
+        console.error("FileReader error event:", event);
+        if (reader.error) {
+          console.error("FileReader specific error:", reader.error);
+        }
+        throw new Error(
+          `FileReader failed to read blob: ${
+            reader.error?.message || "Unknown error"
+          }`
+        );
+      };
+
+      console.log("Calling reader.readAsDataURL...");
+      reader.readAsDataURL(audioBlob);
+      console.log("Started reading blob as Data URL...");
+      // --- End audio processing ---
+    } catch (error: any) {
+      console.error("Error during ElevenLabs TTS or playback:", error.message);
+      Alert.alert("Error", `Gagal memutar suara: ${error.message}`);
+      setSpeaking(false);
+      stopPulseAnimation();
+      // Ensure sound is unloaded in case of error during setup
+      await unloadSound();
+    }
   };
 
   const processQuestion = async (question: string) => {
@@ -217,6 +374,7 @@ const Page = () => {
       if (result && result.answer) {
         setAnswer(result.answer);
         speakWithAnimation(result.answer);
+        console.log(result.answer);
       } else {
         console.log(
           "[Production Debug] No answer in result, using fallback question"
@@ -307,12 +465,31 @@ const Page = () => {
 
   useEffect(() => {
     return () => {
+      // Existing cleanup
       if (speaking) {
-        Speech.stop();
+        handleStopSpeaking(); // Use the new stop function
         stopPulseAnimation();
       }
+      unloadSound(); // Ensure sound is unloaded on unmount
     };
-  }, [speaking]);
+  }, [speaking, sound]);
+
+  useEffect(() => {
+    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }); // Ensure playback works in silent mode (iOS)
+    return () => {
+      unloadSound(); // Cleanup on unmount
+    };
+  }, [sound]);
+
+  const handleStopSpeaking = async () => {
+    if (speaking && sound) {
+      console.log("Stopping playback...");
+      await sound.stopAsync();
+      // Playback status listener should handle state updates (speaking, animation)
+    }
+    // If you were using expo-speech, you might need:
+    // Speech.stop();
+  };
 
   return (
     <GestureHandlerRootView>
@@ -366,7 +543,6 @@ const Page = () => {
                 style={{
                   transform: [{ scale: pulseScale }],
                   opacity: pulseOpacity,
-                  animationDelay: "300ms",
                 }}
                 className="bg-teal-500 h-3 w-3 rounded-full mx-0.5"
               />
@@ -374,7 +550,6 @@ const Page = () => {
                 style={{
                   transform: [{ scale: pulseScale }],
                   opacity: pulseOpacity,
-                  animationDelay: "600ms",
                 }}
                 className="bg-teal-500 h-3 w-3 rounded-full mx-0.5"
               />
@@ -418,11 +593,7 @@ const Page = () => {
           )}
           <TouchableOpacity
             onPress={() => {
-              if (speaking) {
-                Speech.stop();
-                setSpeaking(false);
-                stopPulseAnimation();
-              }
+              handleStopSpeaking();
               router.back();
             }}
             className="rounded-full bg-gray-100 p-5"
