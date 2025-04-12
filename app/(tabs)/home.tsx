@@ -3,24 +3,16 @@ import PostCardCaregiver from "@/components/PostCardCaregiver";
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/context/AuthContext";
 import { useGetPostByUser } from "@/hooks/usePost";
-import {
-  getAllPatients,
-  useCheckCaregiverStatus,
-  useConnectPatient,
-} from "@/hooks/useUser";
-import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Button,
+  View,
   FlatList,
-  Linking,
   ScrollView,
   TouchableOpacity,
-  View,
+  Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
@@ -37,29 +29,16 @@ const Page = () => {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const { mutate: connectPatient } = useConnectPatient();
   const isCaregiver = userData?.role === "caregiver";
-  const { posts, isLoading: isLoadingPosts } = useGetPostByUser(
+  const { posts, isLoading } = useGetPostByUser(
     userData?.id as string,
     userData?.role
   );
+  const { data: caregiverStatus } = useCheckCaregiverStatus();
+  const router = useRouter();
 
   useEffect(() => {
-    console.log(caregiverStatus);
-    if (caregiverStatus && !caregiverStatus.isProfileComplete) {
-      router.replace("/quiz");
-    }
-  }, [caregiverStatus]);
-
-  // Tampilkan loading state saat mengecek status
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#2A9E9E" />
-        <ThemedText className="mt-4 text-gray-600">
-          Memeriksa status caregiver...
-        </ThemedText>
-      </View>
-    );
-  }
+    console.log(userData);
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -98,20 +77,18 @@ const Page = () => {
     }
 
     return (
-      <>
-        <PostCard
-          id={item.id}
-          title={item.title}
-          name={item?.users?.username as string}
-          created_at={formatDate(item.created_at)}
-          image_url={(item.image_url as string) || (item.image as string)}
-          caption={item.caption}
-          like={item.like || 0}
-          comment={item.comment || 0}
-          share={item.share || 0}
-          imageProfile="https://picsum.photos/100/100"
-        />
-      </>
+      <PostCard
+        id={item.id}
+        title={item.title}
+        name={item?.users?.username as string}
+        created_at={formatDate(item.created_at)}
+        image_url={(item.image_url as string) || (item.image as string)}
+        caption={item.caption}
+        like={item.like || 0}
+        comment={item.comment || 0}
+        share={item.share || 0}
+        imageProfile="https://picsum.photos/100/100"
+      />
     );
   };
 
@@ -127,7 +104,7 @@ const Page = () => {
   };
 
   const renderContent = () => {
-    if (isLoadingPosts) {
+    if (isLoading) {
       return (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2A9E9E" />
@@ -150,10 +127,6 @@ const Page = () => {
                 </ThemedText>
               </View>
             </View>
-            <Button
-              onPress={() => router.push("/caregiver-quiz/questions")}
-              title="tes"
-            />
             <Ionicons name="notifications-outline" size={24} color="black" />
           </View>
           <View className="mt-4">
@@ -192,30 +165,14 @@ const Page = () => {
                 3
               </ThemedText>
             </TouchableOpacity>
-            {caregiverStatus?.level >= 4 ? (
-              <TouchableOpacity
-                className="flex-1 bg-red-500 p-4 rounded-lg mx-1"
-                onPress={() => {
-                  Linking.openURL("https://www.halodoc.com/");
-                }}
-              >
-                <ThemedText className="text-white font-bold text-center">
-                  Konsultasi Halodoc
-                </ThemedText>
-                <ThemedText className="text-white text-sm text-center mt-1">
-                  Segera Konsultasi!
-                </ThemedText>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity className="flex-1 bg-teal-600 p-4 rounded-lg mx-1">
-                <ThemedText className="text-white font-bold text-center">
-                  Rutinitas Hari Ini
-                </ThemedText>
-                <ThemedText className="text-white text-2xl font-bold text-center">
-                  2
-                </ThemedText>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity className="flex-1 bg-teal-500 p-4 rounded-lg mx-1">
+              <ThemedText className="text-white font-bold text-center">
+                Rutinitas Hari Ini
+              </ThemedText>
+              <ThemedText className="text-white text-2xl font-bold text-center">
+                2
+              </ThemedText>
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -227,7 +184,7 @@ const Page = () => {
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
         >
-          <View className="mt-10">
+          <View className="py-4">
             <View className="flex-row items-center justify-between mt-4">
               <View className="flex-row items-center">
                 <View className="w-10 h-10 bg-gray-300 rounded-full" />
@@ -240,15 +197,10 @@ const Page = () => {
                   </ThemedText>
                 </View>
               </View>
-              <Ionicons
-                onPress={() => router.push("/caregiver-quiz/questions")}
-                name="notifications-outline"
-                size={24}
-                color="black"
-              />
+              <Ionicons name="notifications-outline" size={24} color="black" />
             </View>
             <View className="mt-4">
-              <View className="bg-teal-600 border border-gray-300 rounded-lg">
+              <View className="bg-teal-500 border border-gray-300 rounded-lg">
                 <Picker
                   selectedValue={selectedPatient}
                   onValueChange={(value) => setSelectedPatient(value)}
@@ -276,46 +228,28 @@ const Page = () => {
                 </TouchableOpacity>
               )}
             </View>
-            <View className="flex-row justify-between my-5">
-              <TouchableOpacity className="flex-1 p-4 rounded-lg mx-1 border border-teal-500">
-                <ThemedText className="text-teal-500 font-bold text-center">
+            <View className="flex-row justify-between mt-4">
+              <TouchableOpacity className="flex-1 bg-teal-500 p-4 rounded-lg mx-1">
+                <ThemedText className="text-white font-bold text-center">
                   Kegiatan Hari Ini
                 </ThemedText>
-                <ThemedText className="text-teal-500 text-2xl font-bold text-center">
+                <ThemedText className="text-white text-2xl font-bold text-center">
                   3
                 </ThemedText>
               </TouchableOpacity>
-
-              {caregiverStatus?.level >= 4 ? (
-                <TouchableOpacity
-                  className="flex-1 bg-red-500 p-4 rounded-lg mx-1"
-                  onPress={() => {
-                    Linking.openURL("https://www.halodoc.com/");
-                  }}
-                >
-                  <ThemedText className="text-white font-bold text-center">
-                    Konsultasi Halodoc
-                  </ThemedText>
-                  <ThemedText className="text-white text-sm text-center mt-1">
-                    Segera Konsultasi!
-                  </ThemedText>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity className="flex-1 bg-teal-500 p-4 rounded-lg mx-1">
-                  <ThemedText className="text-white font-bold text-center">
-                    Rutinitas Hari Ini
-                  </ThemedText>
-                  <ThemedText className="text-white text-2xl font-bold text-center">
-                    2
-                  </ThemedText>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity className="flex-1 bg-teal-500 p-4 rounded-lg mx-1">
+                <ThemedText className="text-white font-bold text-center">
+                  Rutinitas Hari Ini
+                </ThemedText>
+                <ThemedText className="text-white text-2xl font-bold text-center">
+                  2
+                </ThemedText>
+              </TouchableOpacity>
             </View>
             <FlatList
               data={posts}
               scrollEnabled={false}
               renderItem={renderPostCard}
-              contentContainerStyle={{ gap: 18 }}
             />
           </View>
         </ScrollView>
@@ -338,14 +272,14 @@ const Page = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View
+      <SafeAreaView
         className="flex-1"
         style={{
           backgroundColor: "#fff",
         }}
       >
         {renderContent()}
-      </View>
+      </SafeAreaView>
     </GestureHandlerRootView>
   );
 };
