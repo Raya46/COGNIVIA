@@ -4,6 +4,7 @@ import React from "react";
 import { Image, TouchableOpacity, View } from "react-native";
 import { PostCardType } from "./PostCard";
 import { ThemedText } from "./ThemedText";
+import { LinearGradient } from "expo-linear-gradient";
 
 const PostCardCaregiver = ({
   id,
@@ -44,46 +45,94 @@ const PostCardCaregiver = ({
   const { hari, tanggal } = formatDate(created_at);
 
   return (
-    <View className="relative border border-teal-500 p-5 rounded-lg mt-12">
+    <LinearGradient
+      colors={["#99F6E4", "#FFFFFF"]}
+      start={{ x: 0, y: 1 }}
+      end={{ x: 0.5, y: 0.2 }}
+      style={{ borderRadius: 12, marginTop: 48, padding: 20 }}
+    >
       {/* Header Section dengan absolute positioning */}
-      <View className="absolute -top-10 left-4 right-4">
-        <View className="flex-row justify-between">
-          {/* Card Tanggal */}
-          <View className="bg-teal-700 px-3 py-2 rounded-lg w-24 h-20 flex flex-col items-center justify-center">
+      <View style={{ position: "absolute", top: -40, left: 16, right: 16 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          {/* Card Tanggal dengan gradient */}
+          <LinearGradient
+            colors={["#008B8B", "#008B8B"]}
+            style={{
+              borderRadius: 8,
+              width: 96,
+              height: 80,
+              padding: 8,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <ThemedText className="text-gray-200 text-sm text-center capitalize">
               {hari}
             </ThemedText>
             <ThemedText className="text-white text-xl font-bold text-center">
               {tanggal}
             </ThemedText>
-          </View>
+          </LinearGradient>
         </View>
       </View>
 
       {/* Main Content */}
-      <View className="bg-teal-500 px-4 py-2 flex-row items-center rounded-lg self-end">
+      <LinearGradient
+        colors={["#14B8A6", "#0D9488"]}
+        style={{
+          borderRadius: 8,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          alignSelf: "flex-end",
+          flexDirection: "row",
+          alignItems: "center",
+        }}
+      >
         <ThemedText className="text-white font-semibold text-xs ml-1">
           Tambah Recall
         </ThemedText>
-      </View>
-      <View className="mt-4">
+      </LinearGradient>
+
+      <View style={{ marginTop: 16 }}>
         {/* Image */}
-        <View className="mb-4">
+        <View
+          style={{
+            marginBottom: 16,
+            borderRadius: 8,
+            overflow: "hidden",
+          }}
+        >
           <Image
             source={{
               uri: image_url,
             }}
-            className="w-full h-40 rounded-lg"
-            style={{ resizeMode: "cover" }}
+            style={{
+              width: "100%",
+              height: 160,
+              resizeMode: "cover",
+            }}
           />
         </View>
 
-        {/* Divider */}
-        <View className="border-t border-teal-200" />
+        {/* Divider dengan gradient */}
+        <LinearGradient
+          colors={["#5EEAD4", "#2DD4BF"]}
+          style={{
+            height: 1,
+            width: "100%",
+          }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        />
 
         {/* Footer */}
         <TouchableOpacity
-          className="flex-row items-center justify-between mt-3"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
           onPress={() =>
             router.push({
               pathname: "/detail-post",
@@ -91,13 +140,13 @@ const PostCardCaregiver = ({
             })
           }
         >
-          <ThemedText className="text-teal-600 font-semibold">
+          <ThemedText className="text-teal-800 font-semibold">
             Lihat Detail
           </ThemedText>
-          <Ionicons name="arrow-forward" size={18} color="#0D9488" />
+          <Ionicons name="arrow-forward" size={18} color="#115E59" />
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 

@@ -33,8 +33,8 @@ const Page = () => {
   const { mutate: updateStatus } = useUpdateConnectionStatus();
   const { mutate: logout } = useLogout();
   const { schedules, isLoading: scheduleLoading } = useGetSchedule(
-    undefined,
-    userData?.id as string
+    isCaregiver ? userData?.id : undefined,
+    isCaregiver ? undefined : userData?.id
   );
   const renderSchedule = ({ item }: { item: ScheduleCardProps }) => {
     return (
@@ -134,26 +134,47 @@ const Page = () => {
           </TouchableOpacity>
 
           <View className="flex flex-row items-center justify-between mb-3">
-            <ThemedText className="text-lg font-bold">Jadwal</ThemedText>
-            {isCaregiver ? (
-              <TouchableOpacity>
-                <ThemedText
-                  onPress={() => router.push("/schedule")}
-                  className="text-teal-500"
-                >
-                  Detail
-                </ThemedText>
+            <ThemedText className="text-lg font-bold">
+              {isCaregiver ? "Semua Jadwal Dibuat" : "Jadwal Saya"}
+            </ThemedText>
+            {isCaregiver && (
+              <TouchableOpacity
+                onPress={() => router.push("/schedule")}
+                className="bg-teal-500 px-3 py-1 rounded-lg"
+              >
+                <ThemedText className="text-white">Detail</ThemedText>
               </TouchableOpacity>
-            ) : null}
+            )}
           </View>
 
-          <FlatList
-            data={schedules}
-            renderItem={renderSchedule}
-            keyExtractor={(item) => item.id as string}
-            scrollEnabled={false}
-            ItemSeparatorComponent={() => <View className="h-1" />}
-          />
+          {scheduleLoading ? (
+            <ActivityIndicator size="small" color="#008B8B" />
+          ) : schedules && schedules.length > 0 ? (
+            <FlatList
+              data={schedules}
+              renderItem={renderSchedule}
+              keyExtractor={(item) => item.id as string}
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => <View className="h-2" />}
+              ListEmptyComponent={() => (
+                <View className="py-4">
+                  <ThemedText className="text-center text-gray-500">
+                    {isCaregiver
+                      ? "Belum ada jadwal yang dibuat"
+                      : "Belum ada jadwal untuk Anda"}
+                  </ThemedText>
+                </View>
+              )}
+            />
+          ) : (
+            <View className="py-4">
+              <ThemedText className="text-center text-gray-500">
+                {isCaregiver
+                  ? "Belum ada jadwal yang dibuat"
+                  : "Belum ada jadwal untuk Anda"}
+              </ThemedText>
+            </View>
+          )}
         </View>
 
         {!isCaregiver && (
@@ -198,7 +219,7 @@ const Page = () => {
           {connectionsLoading ? (
             <ActivityIndicator size="small" color="#008B8B" />
           ) : (
-            <View className="space-y-2">
+            <View className="space-y-2 gap-3">
               {connections?.map((connection) => (
                 <View
                   key={connection.id}
