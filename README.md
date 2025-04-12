@@ -1,69 +1,74 @@
-# Cognivia: AI & OCR Based Mobile Application for Dementia Sufferers
+<img alt="Cognivia - AI & OCR Based Mobile Applocation for Dementia Sufferers" src="./assets/images/readme.png" />
 
-Cognivia adalah aplikasi mobile berbasis AI yang dirancang untuk membantu penderita demensia dan caregiver dalam aktivitas sehari-hari. Menggunakan teknologi seperti speech recognition, text recognition, dan real-time location tracking, Cognivia menghadirkan solusi yang interaktif, responsif, dan manusiawi.
+<h1 align="center">Cognivia - Smart Companion for Dementia Care</h1> 
 
----
-## Arsitektur Sistem
+<p align="center">
+  Empowering dementia patients and caregivers through AI-powered tools
+</p>
 
-![Architecture Diagram](https://github.com/user-attachments/assets/92fa1da4-998f-4db5-a64e-8548e229f570)
+<p align="center">
+  <a href="#tech-stack"><strong>Tech Stack</strong></a> ·
+  <a href="#features"><strong>Features</strong></a> ·
+  <a href="#apk"><strong>APK</strong></a> ·
+  <a href="#microservice"><strong>Microservice</strong></a> ·
+  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a>
+</p>
 
----
+<br/>
 
-## Teknologi Utama
+## Tech Stack
 
 ### Frontend
-
-- React Native  
-- Typescript  
-- Tailwind CSS (via NativeWind)  
-- Expo (untuk pengembangan & deployment)
+- React Native
+- Typescript
+- Tailwind CSS (NativeWind)
+- Expo
 
 ### Backend & Services
-
-- Supabase (Database & Authentication)  
-- AWS S3 (Penyimpanan file)  
-- Python (untuk microservice Telegram bot)  
-  Repository: [cognivia-telegram-bot](https://github.com/valuin/cognivia-telegram-bot)
+- Supabase (Database & Auth)
+- AWS S3 (Storage)
+- Python (Telegram Microservice)
 
 ### AI & ML
+- Gemini API (Speech Recognition, Context Generation)
+- ElevenLabs (Text-to-Speech)
+- React Native ML Kit (Text Recognition)
 
-- Gemini 2.0 Flash API (speech recognition, context generation)  
-- ElevenLabs (text-to-speech)  
-- React Native ML Kit (text recognition)
-
-### Maps & Location
-
-- Google Maps API (live tracking lokasi pengguna)
+### Map
+- Google Maps API (Real-Time Location)
 
 ---
 
-## Microservices
+## Features
 
-### Telegram Bot Microservice
-
-Microservice berbasis Python yang berfungsi untuk menghubungkan caregiver dan pasien melalui Telegram.  
-Repositori: [valuin/cognivia-telegram-bot](https://github.com/valuin/cognivia-telegram-bot)
-
----
-
-## Fitur Utama
-
-| Fitur         | Deskripsi                                                                 |
-|---------------|---------------------------------------------------------------------------|
-| Recall Memory | Menggunakan speech recognition dan text-to-speech untuk mengingatkan pengguna |
-| Guess Me      | Fitur pengenalan wajah menggunakan ML Kit untuk mengenali kerabat        |
-| Clock Test    | Tes kognitif sederhana antara pasien dan caregiver                       |
-| Agentic AI    | Pengiriman media melalui Telegram                                        |
-| Safe Zone     | Pemantauan lokasi pasien secara real-time menggunakan Google Maps API    |
+- **Recall Memory** — Speech-to-text & text-to-speech to help patients recall info
+- **Guess Me** — Face recognition using ML Kit to identify familiar people
+- **Clock Test** — Interactive cognitive test for dementia screening
+- **Tool Calling** — Sends audio/media files to caregivers via Telegram
+- **Safe Zone** — Real-time location tracking with Google Maps
+- **Secure User Data** — Stored and authenticated with Supabase
 
 ---
 
+## APK
 
-## Tim Pengembang - Counter Avenue
+Akses APK melalui tag release di sini:  
+**[Download APK](https://github.com/user-attachments/assets/92fa1da4-998f-4db5-a64e-8548e229f570)**
 
-1. Mohammad Hervin Abydzar Hakim
-2. Valtrizt Khalifah Warri
-3. Tegar Fadillah  
-4. Muhammad Raya Ar Rizki  
-5. Ramadhika Darmaputra  
+---
 
+## Microservice
+
+Kami juga mengembangkan microservice tambahan untuk integrasi Telegram Bot.  
+Cek source code-nya di:  
+**[cognivia-telegram-bot](https://github.com/valuin/cognivia-telegram-bot)**
+
+---
+
+## Clone and run locally
+
+1. Clone repository ini:
+
+```bash
+git clone https://github.com/namauser/cognivia.git
+cd cognivia
